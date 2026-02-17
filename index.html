@@ -401,12 +401,35 @@
         mkTheme("Wohnung (warm)", "#f2b277", [{ name:"Wohnung (warm)", amount:1090, payer:"split_custom", moritz_share:545, linda_share:545 }]),
         mkTheme("Rücklage Nachzahlung", "#7ac28b", [{ name:"Rücklage Nachzahlung", amount:75, payer:"split_custom", moritz_share:37.5, linda_share:37.5 }]),
         mkTheme("Lebenserhaltungskosten (essen, etc.)", "#c95a7a", [{ name:"Lebenserhaltungskosten", amount:650, payer:"split_custom", moritz_share:325, linda_share:325 }]),
-        mkTheme("Auto Versicherung", "#a98bc9", [{ name:"Auto Versicherung", amount:92.02, payer:"moritz" }]),
+        mkTheme("Auto Versicherung", "#a98bc9", [{ name:"Auto Versicherung", amount:92.02, payer:"split_custom", moritz_share:46.01, linda_share:46.01 }]),
         mkTheme("Strom (inkl. Nachtspeicher)", "#f0d44a", [{ name:"Strom", amount:310, payer:"split_custom", moritz_share:155, linda_share:155 }]),
         mkTheme("Internet (Vertrag + Router)", "#6aa7d9", [{ name:"Internet", amount:57, payer:"split_custom", moritz_share:28.5, linda_share:28.5 }]),
         mkTheme("Handy (2 Verträge)", "#f29aa2", [{ name:"Handy", amount:90, payer:"split_custom", moritz_share:45, linda_share:45 }]),
-        mkTheme("Abonnements (Fitness, Programme, Mitgliedschaften)", "#f08f57", [{ name:"Abonnements", amount:322, payer:"split_custom", moritz_share:161, linda_share:161 }]),
-        mkTheme("Versicherungen (Hafti, Recht)", "#89c2c7", [{ name:"Versicherungen", amount:27, payer:"split_custom", moritz_share:13.5, linda_share:13.5 }]),
+        mkTheme("Abonnements (Fitness, Programme, Mitgliedschaften)", "#f08f57", [
+
+  { name:"Microsoft", amount:7.00, payer:"linda" },
+  { name:"Microsoft", amount:2.78, payer:"moritz" },
+
+  { name:"Adobe", amount:66.00, payer:"split_custom", moritz_share:33.00, linda_share:33.00 },
+
+  { name:"Amazon Prime", amount:8.99, payer:"linda" },
+
+  { name:"Verdi", amount:27.50, payer:"linda" },
+  { name:"Verdi", amount:27.50, payer:"moritz" },
+
+  { name:"SPD Land", amount:7.50, payer:"linda" },
+  { name:"SPD Land", amount:7.50, payer:"moritz" },
+
+  { name:"Selection", amount:31.80, payer:"linda" },
+  { name:"Selection", amount:31.80, payer:"moritz" },
+
+  { name:"awo", amount:2.50, payer:"linda" },
+  { name:"awo", amount:2.50, payer:"moritz" },
+
+  { name:"Spotify", amount:8.78, payer:"split_custom", moritz_share:4.39, linda_share:4.39 }
+
+]),
+        mkTheme("Versicherungen (Hafti, Recht)", "#89c2c7", [{ name:"Versicherungen", amount:45, payer:"split_custom", moritz_share:15, linda_share:30 }]),
       ]
     };
 
