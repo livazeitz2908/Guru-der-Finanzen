@@ -83,6 +83,10 @@
     button:hover{ border-color:#d3d3db; }
     button.primary{ background:#111; color:#fff; border-color:#111; }
     button.danger{ background:#fff; color:#b00020; border-color:#f0c0c8; }
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
 
     .wrap{ padding:14px 20px 30px; display:grid; grid-template-columns: 1fr; gap:14px; }
     .panel{
@@ -134,13 +138,25 @@
     .bubble .meta{ margin-top:6px; font-size:12px; color:rgba(0,0,0,.65); }
 
     label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
-    input[type="text"], input[type="number"], input[type="month"], select{
+    input[type="text"], input[type="number"], input[type="month"], select, textarea{
       width:100%;
       padding:10px 12px;
       border-radius:12px;
       border:1px solid var(--border);
       outline:none;
       background:#fff;
+      font-family: inherit;
+    }
+    textarea{ resize:vertical; }
+
+    input[type="color"]{
+      width: 60px;
+      height: 40px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:0;
+      background:#fff;
+      cursor:pointer;
     }
 
     .row{ display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
@@ -212,6 +228,7 @@
       flex-wrap:wrap;
     }
     .modal h2{ margin:0; font-size:18px; }
+
     .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
     @media (max-width: 760px){
       .grid2{ grid-template-columns: 1fr; }
@@ -252,13 +269,14 @@
         <button class="tab" data-route="lebenserhaltung">Lebenserhaltung</button>
         <button class="tab" data-route="privat_linda">Privat (Linda)</button>
       </div>
+
       <div class="pill" id="topRightPill">–</div>
     </div>
   </header>
 
   <main class="wrap" id="app"></main>
 
-  <!-- Shared Modal (Fixkosten/Living) -->
+  <!-- Shared Modal (Fixkosten + Lebenserhaltung) -->
   <div class="modal-backdrop" id="backdrop" role="dialog" aria-modal="true">
     <div class="modal">
       <header>
@@ -364,17 +382,17 @@
     </div>
   </div>
 
-  <!-- PRIVATE Modal (Linda) -->
-  <div class="modal-backdrop" id="backdropPrivate" role="dialog" aria-modal="true">
+  <!-- Private Modal (Linda Privat) -->
+  <div class="modal-backdrop" id="p_backdrop" role="dialog" aria-modal="true">
     <div class="modal">
       <header>
         <div>
-          <h2 id="modalTitlePrivate">Privat</h2>
-          <div class="tiny" id="modalSubPrivate">–</div>
+          <h2 id="p_modalTitle">Privat-Bubble</h2>
+          <div class="tiny" id="p_modalSub">–</div>
         </div>
         <div class="row" style="justify-content:flex-end;">
-          <button id="btnDeleteThemePrivate" class="danger">Bubble löschen</button>
-          <button id="btnClosePrivate">Schließen</button>
+          <button id="p_btnDeleteTheme" class="danger">Bubble löschen</button>
+          <button id="p_btnClose">Schließen</button>
         </div>
       </header>
 
@@ -383,40 +401,39 @@
           <h3 style="margin:0 0 10px;">Bubble bearbeiten</h3>
           <div class="row">
             <div>
-              <label for="themeNamePrivate">Name</label>
-              <input id="themeNamePrivate" type="text" placeholder="z.B. Wünsche" />
+              <label for="p_themeName">Name</label>
+              <input id="p_themeName" type="text" placeholder="z.B. Shopping" />
             </div>
             <div class="shrink">
-              <label for="themeColorPrivate">Farbe</label>
-              <input id="themeColorPrivate" type="color" />
+              <label for="p_themeColor">Farbe</label>
+              <input id="p_themeColor" type="color" />
             </div>
           </div>
           <div class="row" style="margin-top:10px;">
-            <button id="btnSaveThemePrivate" class="primary">Speichern</button>
+            <button id="p_btnSaveTheme" class="primary">Speichern</button>
           </div>
-          <div class="tiny" style="margin-top:8px;">Summe = Summe deiner privaten Posten.</div>
+          <div class="tiny" style="margin-top:8px;">Summe wird automatisch aus den privaten Posten berechnet.</div>
         </section>
 
         <section class="panel">
           <h3 style="margin:0 0 10px;">Posten hinzufügen</h3>
 
-          <div class="inlineGrid3">
+          <div class="row">
             <div>
-              <label for="itemNamePrivate">Posten</label>
-              <input id="itemNamePrivate" type="text" placeholder="z.B. Buch" />
+              <label for="p_itemName">Posten</label>
+              <input id="p_itemName" type="text" placeholder="z.B. DM" />
             </div>
             <div>
-              <label for="itemAmountPrivate">Betrag (Monat €)</label>
-              <input id="itemAmountPrivate" type="number" step="0.01" placeholder="z.B. 19.99" />
+              <label for="p_itemAmount">Betrag (€)</label>
+              <input id="p_itemAmount" type="number" step="0.01" placeholder="z.B. 12.99" />
             </div>
             <div class="shrink">
               <label>&nbsp;</label>
-              <button id="btnAddItemPrivate" class="primary">+ Hinzufügen</button>
+              <button id="p_btnAddItem" class="primary">+ Hinzufügen</button>
             </div>
           </div>
-
           <div class="hintBox">
-            Privat: keine Personen/Anteile – nur Name + Betrag.
+            Tipp: Privat-Bubbles ziehen automatisch vom „Übrig“ ab.
           </div>
         </section>
       </div>
@@ -426,19 +443,19 @@
       <section class="panel">
         <h3 style="margin:0 0 10px;">Details & Summen</h3>
         <div class="row" style="margin-bottom:10px;">
-          <div class="pill" id="themeTotalPillPrivate">Summe: –</div>
-          <div class="pill" id="themeItemsPillPrivate">Posten: –</div>
+          <div class="pill" id="p_themeTotalPill">Summe: –</div>
+          <div class="pill" id="p_themeItemsPill">Posten: –</div>
         </div>
 
         <table>
           <thead>
             <tr>
               <th>Posten</th>
-              <th class="right">Monat €</th>
+              <th class="right">€</th>
               <th class="right">Aktion</th>
             </tr>
           </thead>
-          <tbody id="itemsTbodyPrivate">
+          <tbody id="p_itemsTbody">
             <tr><td colspan="3" class="muted">Keine Daten</td></tr>
           </tbody>
         </table>
@@ -447,12 +464,9 @@
   </div>
 
   <script>
-    const LS_MAIN = "finance_bubbles_v2";
-    const LS_LIVING = "finance_living_v1";
-    const LIVING_START = 650;
-    const LS_PRIVATE_LINDA = "finance_private_linda_bubbles_v1"; // <-- eigener Key
-
-    /** Utils **/
+    /**********************
+     * Utils
+     **********************/
     function uid(){
       if (crypto?.randomUUID) return crypto.randomUUID();
       return "id_" + Math.random().toString(16).slice(2) + "_" + Date.now();
@@ -470,17 +484,29 @@
         .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
     }
-    function normalizePayer(p){
-      const v = String(p || "split_custom");
-      if(v === "moritz" || v === "linda" || v === "split_custom") return v;
-      return "split_custom";
-    }
     function randomNiceColor(){
       const palette = ["#f2b277","#c95a7a","#a98bc9","#7ac28b","#6aa7d9","#f0d44a","#f29aa2","#89c2c7","#f08f57"];
       return palette[Math.floor(Math.random() * palette.length)];
     }
 
-    /** Main item normalize **/
+    /**********************
+     * Fixkosten + Lebenserhaltung State
+     **********************/
+    const LS_MAIN = "finance_bubbles_v2";
+    const LS_LIVING = "finance_living_v1";
+    const LIVING_START = 650;
+
+    const PEOPLE = [
+      { id:"moritz", name:"Moritz" },
+      { id:"linda", name:"Linda" }
+    ];
+
+    function normalizePayer(p){
+      const v = String(p || "split_custom");
+      if(v === "moritz" || v === "linda" || v === "split_custom") return v;
+      return "split_custom";
+    }
+
     function normalizeItem(it){
       const payer = normalizePayer(it.payer);
       const amount = Number(it.amount || 0);
@@ -524,6 +550,34 @@
       };
     }
 
+    const SEED_MAIN = {
+      themes: [
+        mkTheme("Wohnung (warm)", "#f2b277", [{ name:"Wohnung (warm)", amount:1090, payer:"split_custom", moritz_share:545, linda_share:545 }]),
+        mkTheme("Rücklage Nachzahlung", "#7ac28b", [{ name:"Rücklage Nachzahlung", amount:75, payer:"split_custom", moritz_share:37.5, linda_share:37.5 }]),
+        mkTheme("Lebenserhaltungskosten (essen, etc.)", "#c95a7a", [{ name:"Lebenserhaltungskosten", amount:650, payer:"split_custom", moritz_share:325, linda_share:325 }]),
+        mkTheme("Auto Versicherung", "#a98bc9", [{ name:"Auto Versicherung", amount:92.02, payer:"split_custom", moritz_share:46.01, linda_share:46.01 }]),
+        mkTheme("Strom (inkl. Nachtspeicher)", "#f0d44a", [{ name:"Strom", amount:310, payer:"split_custom", moritz_share:155, linda_share:155 }]),
+        mkTheme("Internet (Vertrag + Router)", "#6aa7d9", [{ name:"Internet", amount:57, payer:"split_custom", moritz_share:28.5, linda_share:28.5 }]),
+        mkTheme("Handy (2 Verträge)", "#f29aa2", [{ name:"Handy", amount:90, payer:"split_custom", moritz_share:45, linda_share:45 }]),
+        mkTheme("Abonnements (Fitness, Programme, Mitgliedschaften)", "#f08f57", [
+          { name:"Microsoft", amount:7.00, payer:"linda" },
+          { name:"Microsoft", amount:2.78, payer:"moritz" },
+          { name:"Adobe", amount:66.00, payer:"split_custom", moritz_share:33.00, linda_share:33.00 },
+          { name:"Amazon Prime", amount:8.99, payer:"linda" },
+          { name:"Verdi", amount:27.50, payer:"linda" },
+          { name:"Verdi", amount:27.50, payer:"moritz" },
+          { name:"SPD Land", amount:7.50, payer:"linda" },
+          { name:"SPD Land", amount:7.50, payer:"moritz" },
+          { name:"Selection", amount:31.80, payer:"linda" },
+          { name:"Selection", amount:31.80, payer:"moritz" },
+          { name:"awo", amount:2.50, payer:"linda" },
+          { name:"awo", amount:2.50, payer:"moritz" },
+          { name:"Spotify", amount:8.78, payer:"split_custom", moritz_share:4.39, linda_share:4.39 }
+        ]),
+        mkTheme("Versicherungen (Hafti, Recht, Hausrat)", "#89c2c7", [{ name:"Versicherungen", amount:45, payer:"split_custom", moritz_share:15, linda_share:30 }]),
+      ]
+    };
+
     function themeTotal(theme){
       return (theme.items || []).reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
     }
@@ -554,70 +608,11 @@
       return (themes || []).reduce((s,t) => s + themeTotalForPerson(t, personId), 0);
     }
 
-    /** Private Linda (eigene Datenstruktur, KEINE payer/shares) **/
-    const SEED_PRIVATE_LINDA = {
-      themes: [
-        { id: uid(), name: "Privat", color: randomNiceColor(), items: [ { id: uid(), name: "Beispiel", amount: 10 } ] }
-      ]
-    };
-
-    function normalizePrivateTheme(t){
-      return {
-        id: String(t.id || uid()),
-        name: String(t.name || "Unbenannt"),
-        color: String(t.color || randomNiceColor()),
-        items: Array.isArray(t.items) ? t.items.map(it => ({
-          id: String(it.id || uid()),
-          name: String(it.name || "Posten"),
-          amount: Number(it.amount || 0)
-        })) : []
-      };
+    function yyyymmNow(){
+      const d = new Date();
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      return `${d.getFullYear()}-${m}`;
     }
-
-    function loadPrivateLinda(){
-      try{
-        const raw = localStorage.getItem(LS_PRIVATE_LINDA);
-        if(!raw) return null;
-        const parsed = JSON.parse(raw);
-        if(!parsed || !Array.isArray(parsed.themes)) return null;
-        parsed.themes = parsed.themes.map(normalizePrivateTheme);
-        return parsed;
-      }catch{ return null; }
-    }
-    function savePrivateLinda(){
-      localStorage.setItem(LS_PRIVATE_LINDA, JSON.stringify(privateLindaState));
-    }
-
-    let privateLindaState = loadPrivateLinda() ?? structuredClone(SEED_PRIVATE_LINDA);
-
-    /** Seeds for main **/
-    const SEED_MAIN = {
-      themes: [
-        mkTheme("Wohnung (warm)", "#f2b277", [{ name:"Wohnung (warm)", amount:1090, payer:"split_custom", moritz_share:545, linda_share:545 }]),
-        mkTheme("Rücklage Nachzahlung", "#7ac28b", [{ name:"Rücklage Nachzahlung", amount:75, payer:"split_custom", moritz_share:37.5, linda_share:37.5 }]),
-        mkTheme("Lebenserhaltungskosten (essen, etc.)", "#c95a7a", [{ name:"Lebenserhaltungskosten", amount:650, payer:"split_custom", moritz_share:325, linda_share:325 }]),
-        mkTheme("Auto Versicherung", "#a98bc9", [{ name:"Auto Versicherung", amount:92.02, payer:"split_custom", moritz_share:46.01, linda_share:46.01 }]),
-        mkTheme("Strom (inkl. Nachtspeicher)", "#f0d44a", [{ name:"Strom", amount:310, payer:"split_custom", moritz_share:155, linda_share:155 }]),
-        mkTheme("Internet (Vertrag + Router)", "#6aa7d9", [{ name:"Internet", amount:57, payer:"split_custom", moritz_share:28.5, linda_share:28.5 }]),
-        mkTheme("Handy (2 Verträge)", "#f29aa2", [{ name:"Handy", amount:90, payer:"split_custom", moritz_share:45, linda_share:45 }]),
-        mkTheme("Abonnements (Fitness, Programme, Mitgliedschaften)", "#f08f57", [
-          { name:"Microsoft", amount:7.00, payer:"linda" },
-          { name:"Microsoft", amount:2.78, payer:"moritz" },
-          { name:"Adobe", amount:66.00, payer:"split_custom", moritz_share:33.00, linda_share:33.00 },
-          { name:"Amazon Prime", amount:8.99, payer:"linda" },
-          { name:"Verdi", amount:27.50, payer:"linda" },
-          { name:"Verdi", amount:27.50, payer:"moritz" },
-          { name:"SPD Land", amount:7.50, payer:"linda" },
-          { name:"SPD Land", amount:7.50, payer:"moritz" },
-          { name:"Selection", amount:31.80, payer:"linda" },
-          { name:"Selection", amount:31.80, payer:"moritz" },
-          { name:"awo", amount:2.50, payer:"linda" },
-          { name:"awo", amount:2.50, payer:"moritz" },
-          { name:"Spotify", amount:8.78, payer:"split_custom", moritz_share:4.39, linda_share:4.39 }
-        ]),
-        mkTheme("Versicherungen (Hafti, Recht, Hausrat)", "#89c2c7", [{ name:"Versicherungen", amount:45, payer:"split_custom", moritz_share:15, linda_share:30 }]),
-      ]
-    };
 
     function normalizeThemes(themes){
       return themes.map(t => ({
@@ -655,19 +650,6 @@
       return null;
     }
 
-    function yyyymmNow(){
-      const d = new Date();
-      const m = String(d.getMonth()+1).padStart(2,"0");
-      return `${d.getFullYear()}-${m}`;
-    }
-    function makeDefaultLivingState(){
-      const month = yyyymmNow();
-      return { currentMonth: month, months: { [month]: { themes: [] } }, notes: { [month]: [] } };
-    }
-    function ensureLivingMonth(month){
-      if(!livingState.months[month]) livingState.months[month] = { themes: [] };
-      if(!livingState.notes[month]) livingState.notes[month] = [];
-    }
     function saveLiving(){ localStorage.setItem(LS_LIVING, JSON.stringify(livingState)); }
     function loadLiving(){
       try{
@@ -675,9 +657,11 @@
         if(!raw) return null;
         const parsed = JSON.parse(raw);
         if(!parsed || typeof parsed !== "object") return null;
+
         parsed.currentMonth = String(parsed.currentMonth || yyyymmNow());
         parsed.months = parsed.months && typeof parsed.months === "object" ? parsed.months : {};
         parsed.notes = parsed.notes && typeof parsed.notes === "object" ? parsed.notes : {};
+
         for(const [k,v] of Object.entries(parsed.months)){
           if(!v || typeof v !== "object") continue;
           v.themes = Array.isArray(v.themes) ? normalizeThemes(v.themes) : [];
@@ -686,7 +670,99 @@
       }catch{ return null; }
     }
 
-    /** Bubble layout **/
+    function makeDefaultLivingState(){
+      const month = yyyymmNow();
+      return { currentMonth: month, months: { [month]: { themes: [] } }, notes: { [month]: [] } };
+    }
+    function ensureLivingMonth(month){
+      if(!livingState.months[month]) livingState.months[month] = { themes: [] };
+      if(!livingState.notes[month]) livingState.notes[month] = [];
+    }
+
+    /**********************
+     * PRIVATE (LINDA) – eigener Budget-Topf + eigene Bubbles (separat)
+     **********************/
+    const LS_PRIVATE_LINDA = "finance_private_linda_budget_bubbles_v2";
+    const PRIVATE_BASE_NO_RAT = 673;
+    const PRIVATE_RAT_AMOUNT  = 320;
+
+    const SEED_PRIVATE_LINDA = {
+      budget: {
+        base_no_rat: PRIVATE_BASE_NO_RAT,
+        rat_amount: PRIVATE_RAT_AMOUNT,
+        rat_added: false,
+        carryover: 0
+      },
+      themes: []
+    };
+
+    function normalizePrivateTheme(t){
+      return {
+        id: String(t.id || uid()),
+        name: String(t.name || "Unbenannt"),
+        color: String(t.color || randomNiceColor()),
+        items: Array.isArray(t.items) ? t.items.map(it => ({
+          id: String(it.id || uid()),
+          name: String(it.name || "Posten"),
+          amount: Number(it.amount || 0)
+        })) : []
+      };
+    }
+
+    function normalizePrivateState(parsed){
+      const out = structuredClone(SEED_PRIVATE_LINDA);
+
+      if(parsed && typeof parsed === "object"){
+        if(parsed.budget && typeof parsed.budget === "object"){
+          out.budget.base_no_rat = Number(parsed.budget.base_no_rat ?? PRIVATE_BASE_NO_RAT);
+          out.budget.rat_amount  = Number(parsed.budget.rat_amount ?? PRIVATE_RAT_AMOUNT);
+          out.budget.rat_added   = !!parsed.budget.rat_added;
+          out.budget.carryover   = Number(parsed.budget.carryover ?? 0);
+        }
+        if(Array.isArray(parsed.themes)){
+          out.themes = parsed.themes.map(normalizePrivateTheme);
+        }
+      }
+
+      if(!isFinite(out.budget.base_no_rat)) out.budget.base_no_rat = PRIVATE_BASE_NO_RAT;
+      if(!isFinite(out.budget.rat_amount))  out.budget.rat_amount  = PRIVATE_RAT_AMOUNT;
+      if(!isFinite(out.budget.carryover))   out.budget.carryover   = 0;
+
+      return out;
+    }
+
+    function loadPrivateLinda(){
+      try{
+        const raw = localStorage.getItem(LS_PRIVATE_LINDA);
+        if(!raw) return null;
+        return normalizePrivateState(JSON.parse(raw));
+      }catch{ return null; }
+    }
+    function savePrivateLinda(){
+      localStorage.setItem(LS_PRIVATE_LINDA, JSON.stringify(privateLindaState));
+    }
+
+    let privateLindaState = loadPrivateLinda() ?? structuredClone(SEED_PRIVATE_LINDA);
+
+    function privateThemeTotal(t){
+      return (t.items || []).reduce((s,it)=> s + (Number(it.amount)||0), 0);
+    }
+    function privateSpentTotal(){
+      return (privateLindaState.themes || []).reduce((s,t)=> s + privateThemeTotal(t), 0);
+    }
+    function privateAvailableTotal(){
+      const b = privateLindaState.budget;
+      return (Number(b.base_no_rat)||0)
+        + (Number(b.carryover)||0)
+        + (b.rat_added ? (Number(b.rat_amount)||0) : 0);
+    }
+    function privateRemaining(){
+      return privateAvailableTotal() - privateSpentTotal();
+    }
+
+    /**********************
+     * Bubble layout
+     **********************/
     function layoutBubbles(themes, rect, totalsOverrideMap=null){
       const padding = 10;
       const placed = [];
@@ -737,7 +813,9 @@
       return placed;
     }
 
-    /** App state **/
+    /**********************
+     * App state + DOM
+     **********************/
     let route = "gesamt";
     let activePerson = "moritz";
 
@@ -745,10 +823,12 @@
     let livingState = loadLiving() ?? makeDefaultLivingState();
     let livingMonth = livingState.currentMonth;
 
+    // Shared modal context
     let modalContext = { dataset: "main", themeId: null };
-    let privateModalThemeId = null;
 
-    /** DOM **/
+    // Private modal context
+    let privateModalContext = { themeId: null };
+
     const app = document.getElementById("app");
     const pageTitle = document.getElementById("pageTitle");
     const pageSubtitle = document.getElementById("pageSubtitle");
@@ -758,49 +838,9 @@
       btn.addEventListener("click", () => setRoute(btn.dataset.route));
     });
 
-    /** Shared modal DOM **/
-    const backdrop = document.getElementById("backdrop");
-    const btnClose = document.getElementById("btnClose");
-    const btnDeleteTheme = document.getElementById("btnDeleteTheme");
-    const modalTitle = document.getElementById("modalTitle");
-    const modalSub = document.getElementById("modalSub");
-
-    const themeName = document.getElementById("themeName");
-    const themeColor = document.getElementById("themeColor");
-    const btnSaveTheme = document.getElementById("btnSaveTheme");
-
-    const itemName = document.getElementById("itemName");
-    const itemAmount = document.getElementById("itemAmount");
-    const itemPayer = document.getElementById("itemPayer");
-    const itemMoritz = document.getElementById("itemMoritz");
-    const itemLinda = document.getElementById("itemLinda");
-    const btnAddItem = document.getElementById("btnAddItem");
-
-    const itemsTbody = document.getElementById("itemsTbody");
-    const themeTotalPill = document.getElementById("themeTotalPill");
-    const themeItemsPill = document.getElementById("themeItemsPill");
-    const addItemHint = document.getElementById("addItemHint");
-
-    /** Private modal DOM **/
-    const backdropPrivate = document.getElementById("backdropPrivate");
-    const btnClosePrivate = document.getElementById("btnClosePrivate");
-    const btnDeleteThemePrivate = document.getElementById("btnDeleteThemePrivate");
-    const modalTitlePrivate = document.getElementById("modalTitlePrivate");
-    const modalSubPrivate = document.getElementById("modalSubPrivate");
-
-    const themeNamePrivate = document.getElementById("themeNamePrivate");
-    const themeColorPrivate = document.getElementById("themeColorPrivate");
-    const btnSaveThemePrivate = document.getElementById("btnSaveThemePrivate");
-
-    const itemNamePrivate = document.getElementById("itemNamePrivate");
-    const itemAmountPrivate = document.getElementById("itemAmountPrivate");
-    const btnAddItemPrivate = document.getElementById("btnAddItemPrivate");
-
-    const itemsTbodyPrivate = document.getElementById("itemsTbodyPrivate");
-    const themeTotalPillPrivate = document.getElementById("themeTotalPillPrivate");
-    const themeItemsPillPrivate = document.getElementById("themeItemsPillPrivate");
-
-    /** Router **/
+    /**********************
+     * Router + top right pill
+     **********************/
     function setRoute(next){
       route = next;
       document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.route === route));
@@ -809,14 +849,11 @@
       render();
     }
 
-    /** Top right pill **/
     function renderTopRight(){
       if(route === "privat_linda"){
-        const total = totalOfPrivateThemes(privateLindaState.themes);
-        topRightPill.textContent = `Privat: ${euro(total)}`;
+        topRightPill.textContent = `Übrig: ${euro(privateRemaining())}`;
         return;
       }
-
       if(route === "lebenserhaltung"){
         ensureLivingMonth(livingMonth);
         const themes = livingState.months[livingMonth].themes;
@@ -824,87 +861,20 @@
         topRightPill.textContent = `Rest: ${euro(LIVING_START - spent)}`;
         return;
       }
-
       if(route === "pro_person"){
         const total = totalForPerson(mainState.themes, activePerson);
         const name = activePerson === "moritz" ? "Moritz" : "Linda";
         topRightPill.textContent = `${name}: ${euro(total)}`;
         return;
       }
-
       const total = totalOfThemes(mainState.themes);
       topRightPill.textContent = `Gesamt: ${euro(total)}`;
     }
 
-    /** Render **/
-    function render(){
-      renderTopRight();
-
-      if(route === "privat_linda"){
-        pageTitle.textContent = "PRIVAT (LINDA)";
-        pageSubtitle.textContent = "Eigene private Bubbles (separat gespeichert). Kein Einfluss auf Fixkosten/Lebenserhaltung.";
-        renderPrivateLindaBubbles();
-        return;
-      }
-
-      if(route === "gesamt"){
-        pageTitle.textContent = "FIXKOSTEN ÜBERSICHT";
-        pageSubtitle.textContent = "Gesamtansicht. Klick auf Bubble → Details. Summe oben aktualisiert sich automatisch.";
-        renderBubblesView({
-          dataset: "main",
-          themes: mainState.themes,
-          headerLeftLabel: "Gesamt (Monat)",
-          headerLeftValue: euro(totalOfThemes(mainState.themes)),
-          extraControls: (container) => {
-            const row = document.createElement("div");
-            row.className = "row";
-            row.innerHTML = `
-              <button class="primary" id="btnAddTheme">+ Thema</button>
-              <button class="danger" id="btnResetMain">Reset Fixkosten</button>
-            `;
-            container.appendChild(row);
-
-            row.querySelector("#btnAddTheme").addEventListener("click", () => {
-              const name = prompt("Name für neues Thema:", "Neues Thema");
-              if(name === null) return;
-              const t = mkTheme(name.trim() || "Neues Thema", randomNiceColor(), []);
-              mainState.themes.push(t);
-              saveMain();
-              render();
-              openTheme("main", t.id);
-            });
-
-            row.querySelector("#btnResetMain").addEventListener("click", () => {
-              const ok = confirm("Fixkosten auf Seed zurücksetzen?");
-              if(!ok) return;
-              mainState = structuredClone(SEED_MAIN);
-              saveMain();
-              render();
-            });
-          }
-        });
-        return;
-      }
-
-      if(route === "pro_person"){
-        pageTitle.textContent = "PRO PERSON";
-        pageSubtitle.textContent = "Wähle Moritz oder Linda. „Geteilt (individuell)“ lässt unterschiedliche Anteile pro Posten zu.";
-        renderProPersonSingleView();
-        return;
-      }
-
-      if(route === "lebenserhaltung"){
-        pageTitle.textContent = "LEBENSERHALTUNG";
-        pageSubtitle.textContent = "Eigenes Bubble-Diagramm pro Monat. Oben rechts: Rest (Start 650 € minus Diagramm-Summe).";
-        ensureLivingMonth(livingMonth);
-        saveLiving();
-        renderLivingView();
-        return;
-      }
-    }
-
-    /** Shared bubbles view **/
-    function renderBubblesView({ dataset, themes, headerLeftLabel, headerLeftValue, totalsOverrideMap=null, extraControls=null, mountEl=null }){
+    /**********************
+     * Shared Bubbles View (Fixkosten / pro_person / living-stage uses custom)
+     **********************/
+    function renderBubblesView({ dataset, themes, headerLeftLabel, headerLeftValue, totalsOverrideMap=null, extraControls=null, mountEl=null, storageLabel=null }){
       const root = mountEl || app;
       root.innerHTML = "";
 
@@ -922,7 +892,7 @@
         <div class="stat">
           <div class="label">Speicher</div>
           <div class="value" style="font-size:14px;">LocalStorage ✅</div>
-          <div class="tiny">Fixkosten: <code>${LS_MAIN}</code></div>
+          <div class="tiny">${escapeHTML(storageLabel || "Fixkosten")}: <code>${escapeHTML(dataset === "living" ? LS_LIVING : LS_MAIN)}</code></div>
         </div>
       `;
       root.appendChild(statsPanel);
@@ -935,12 +905,12 @@
       const stagePanel = document.createElement("section");
       stagePanel.className = "panel";
       stagePanel.innerHTML = `
-        <div class="stage" id="stage"></div>
+        <div class="stage"></div>
         <p class="tiny" style="margin:10px 2px 0;">Tip: Bei Overlap Browser kurz resize → neu layouten.</p>
       `;
       root.appendChild(stagePanel);
 
-      const stage = stagePanel.querySelector("#stage");
+      const stage = stagePanel.querySelector(".stage");
 
       const doStageRender = () => {
         stage.innerHTML = "";
@@ -968,23 +938,35 @@
             <div>
               <div class="name" style="font-size:${nameSize}px">${escapeHTML(theme.name)}</div>
               <div class="amount" style="font-size:${amountSize}px">${escapeHTML(euro(shownTotal))}</div>
-              <div class="meta">${theme.items.length} Posten</div>
+              <div class="meta">${(theme.items || []).length} Posten</div>
             </div>
           `;
-          bubble.addEventListener("click", () => openTheme(dataset, theme.id));
+
+          if(dataset === "private"){
+            bubble.addEventListener("click", () => openPrivateTheme(theme.id));
+          }else{
+            bubble.addEventListener("click", () => openTheme(dataset, theme.id));
+          }
+
           stage.appendChild(bubble);
         }
       };
 
       doStageRender();
+
       let timer = null;
-      window.addEventListener("resize", () => {
+      const onResize = () => {
         clearTimeout(timer);
         timer = setTimeout(doStageRender, 80);
-      }, { passive:true });
+      };
+      window.addEventListener("resize", onResize, { passive:true });
+
+      // NOTE: Für ein Single-File Tool lassen wir das so (sonst bräuchten wir Cleanup/AbortController).
     }
 
-    /** Pro person **/
+    /**********************
+     * Pro person view
+     **********************/
     function renderProPersonSingleView(){
       app.innerHTML = "";
       const themes = mainState.themes;
@@ -1046,7 +1028,9 @@
       });
     }
 
-    /** Living view (unverändert, gekürzt hier NICHT; bleibt funktional) **/
+    /**********************
+     * Living view (eigene Struktur + Notizen)
+     **********************/
     function renderLivingView(){
       app.innerHTML = "";
 
@@ -1137,12 +1121,13 @@
       const stagePanel = document.createElement("section");
       stagePanel.className = "panel";
       stagePanel.innerHTML = `
-        <div class="stage" id="livingStage"></div>
+        <div class="stage"></div>
         <p class="tiny" style="margin:10px 2px 0;">Klick auf Bubble → Details. Werte wirken direkt auf den Monats-Rest.</p>
       `;
       app.appendChild(stagePanel);
 
-      const stage = stagePanel.querySelector("#livingStage");
+      const stage = stagePanel.querySelector(".stage");
+
       const doStageRender = () => {
         stage.innerHTML = "";
         const rect = stage.getBoundingClientRect();
@@ -1178,6 +1163,79 @@
       };
       doStageRender();
 
+      // Notes
+      const notesPanel = document.createElement("section");
+      notesPanel.className = "panel";
+      notesPanel.innerHTML = `
+        <h3 style="margin:0 0 10px;">Notizen – Übrig geblieben (wirkt auf nichts)</h3>
+
+        <div class="row" style="margin-bottom:10px;">
+          <div>
+            <label>Datum (optional)</label>
+            <input id="noteDate" type="text" placeholder="z.B. 31.01.2026">
+          </div>
+          <div>
+            <label>Übrig geblieben (€)</label>
+            <input id="noteLeftover" type="number" step="0.01" placeholder="z.B. 120">
+          </div>
+          <div class="shrink">
+            <label>&nbsp;</label>
+            <button class="primary" id="btnAddNote">+ Eintragen</button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th class="right">Übrig (€)</th>
+              <th class="right">Aktion</th>
+            </tr>
+          </thead>
+          <tbody id="notesTbody"></tbody>
+        </table>
+        <p class="tiny" style="margin-top:10px;">Diese Tabelle ist nur eine Notiz – kein Einfluss auf Diagramm/Summen.</p>
+      `;
+      app.appendChild(notesPanel);
+
+      const notesTbody = notesPanel.querySelector("#notesTbody");
+
+      function renderNotes(){
+        const rows = livingState.notes[livingMonth] || [];
+        notesTbody.innerHTML = "";
+        if(rows.length === 0){
+          notesTbody.innerHTML = `<tr><td colspan="3" class="muted">Noch keine Einträge.</td></tr>`;
+          return;
+        }
+        for(const r of rows){
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHTML(r.date || "")}</td>
+            <td class="right">${escapeHTML(String(Number(r.leftover || 0).toFixed(2)))}</td>
+            <td class="right"><button class="danger" data-id="${escapeHTML(r.id)}">Löschen</button></td>
+          `;
+          tr.querySelector("button").addEventListener("click", () => {
+            livingState.notes[livingMonth] = (livingState.notes[livingMonth] || []).filter(x => x.id !== r.id);
+            saveLiving();
+            renderNotes();
+          });
+          notesTbody.appendChild(tr);
+        }
+      }
+
+      notesPanel.querySelector("#btnAddNote").addEventListener("click", () => {
+        const date = notesPanel.querySelector("#noteDate").value.trim();
+        const leftover = Number(notesPanel.querySelector("#noteLeftover").value || 0);
+        livingState.notes[livingMonth] = livingState.notes[livingMonth] || [];
+        livingState.notes[livingMonth].push({ id: uid(), date, leftover });
+        saveLiving();
+        notesPanel.querySelector("#noteDate").value = "";
+        notesPanel.querySelector("#noteLeftover").value = "";
+        renderNotes();
+      });
+
+      renderNotes();
+
       let timer = null;
       window.addEventListener("resize", () => {
         clearTimeout(timer);
@@ -1185,71 +1243,235 @@
       }, { passive:true });
     }
 
-    /** PRIVATE: totals */
-    function privateThemeTotal(t){
-      return (t.items || []).reduce((s,it)=> s + (Number(it.amount)||0), 0);
-    }
-    function totalOfPrivateThemes(themes){
-      return (themes || []).reduce((s,t)=> s + privateThemeTotal(t), 0);
-    }
+    /**********************
+     * Private Linda view (Budget + private bubbles)
+     **********************/
+    function renderPrivateLindaView(){
+      app.innerHTML = "";
+      const budget = privateLindaState.budget;
 
-    /** PRIVATE: bubbles page */
-    function renderPrivateLindaBubbles(){
-      const themes = privateLindaState.themes || [];
+      const statsPanel = document.createElement("section");
+      statsPanel.className = "panel stats";
+      statsPanel.innerHTML = `
+        <div class="stat">
+          <div class="label">Zur Verfügung ohne Rat</div>
+          <div class="value">${escapeHTML(euro(budget.base_no_rat))}</div>
+          <div class="tiny">fix: ${escapeHTML(euro(PRIVATE_BASE_NO_RAT))}</div>
+        </div>
 
-      renderBubblesView({
-        dataset: "private_linda",
-        themes,
-        headerLeftLabel: "Privat (Monat)",
-        headerLeftValue: euro(totalOfPrivateThemes(themes)),
-        extraControls: (container) => {
-          const row = document.createElement("div");
-          row.className = "row";
-          row.innerHTML = `
-            <button class="primary" id="btnAddPrivateTheme">+ Bubble</button>
-            <button class="danger" id="btnResetPrivateAll">Reset Privat</button>
-          `;
-          container.appendChild(row);
+        <div class="stat">
+          <div class="label">Gesamt zur Verfügung</div>
+          <div class="value">${escapeHTML(euro(privateAvailableTotal()))}</div>
+          <div class="tiny">+ Vormonat + ggf. Rat</div>
+        </div>
 
-          row.querySelector("#btnAddPrivateTheme").addEventListener("click", () => {
-            const name = prompt("Name für neue private Bubble:", "Neuer Bereich");
-            if(name === null) return;
-            const t = normalizePrivateTheme({ id: uid(), name: name.trim() || "Neuer Bereich", color: randomNiceColor(), items: [] });
-            privateLindaState.themes.push(t);
-            savePrivateLinda();
-            render();
-            openPrivateTheme(t.id);
-          });
+        <div class="stat">
+          <div class="label">Übrig</div>
+          <div class="value">${escapeHTML(euro(privateRemaining()))}</div>
+          <div class="tiny">Gesamt − Bubbles</div>
+        </div>
+      `;
+      app.appendChild(statsPanel);
 
-          row.querySelector("#btnResetPrivateAll").addEventListener("click", () => {
-            const ok = confirm("Privat-Bubbles wirklich komplett zurücksetzen?");
-            if(!ok) return;
-            privateLindaState = structuredClone(SEED_PRIVATE_LINDA);
-            savePrivateLinda();
-            render();
-          });
+      const controlsPanel = document.createElement("section");
+      controlsPanel.className = "panel";
+      controlsPanel.innerHTML = `
+        <div class="row" style="align-items:center;">
+          <button class="primary" id="btnAddPrivateTheme">+ Bubble</button>
 
-          const hint = document.createElement("div");
-          hint.className = "tiny";
-          hint.style.marginTop = "10px";
-          hint.textContent = "Diese Bubbles sind komplett getrennt gespeichert und beeinflussen nichts außerhalb dieses Tabs.";
-          container.appendChild(hint);
-        }
+          <button class="primary" id="btnAddRat" ${budget.rat_added ? "disabled" : ""}>
+            ${budget.rat_added ? `Rat hinzugefügt (+${budget.rat_amount} €) ✓` : `+${budget.rat_amount} Rat`}
+          </button>
+
+          <button id="btnCarryover">Aus dem Vormonat übrig</button>
+
+          <button class="danger" id="btnResetPrivateAll">Reset Privat</button>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <div class="pill">Vormonat: ${escapeHTML(euro(budget.carryover))}</div>
+          <div class="pill">Bubbles Summe: ${escapeHTML(euro(privateSpentTotal()))}</div>
+          <div class="pill">Storage: <code>${escapeHTML(LS_PRIVATE_LINDA)}</code></div>
+        </div>
+
+        <div class="tiny" style="margin-top:10px;">
+          Dieser Bereich ist komplett separat und beeinflusst nichts außerhalb von „Privat (Linda)“.
+        </div>
+      `;
+      app.appendChild(controlsPanel);
+
+      controlsPanel.querySelector("#btnAddPrivateTheme").addEventListener("click", () => {
+        const name = prompt("Name für neue private Bubble:", "Neuer Bereich");
+        if(name === null) return;
+
+        privateLindaState.themes = privateLindaState.themes || [];
+        privateLindaState.themes.push(normalizePrivateTheme({
+          id: uid(),
+          name: name.trim() || "Neuer Bereich",
+          color: randomNiceColor(),
+          items: []
+        }));
+        savePrivateLinda();
+        render();
+        openPrivateTheme(privateLindaState.themes[privateLindaState.themes.length - 1].id);
       });
 
-      // Klick-Handler für private Bubbles überschreiben:
-      // renderBubblesView ruft openTheme(dataset, id) – das wollen wir für privat abfangen:
-      // => wir hängen einfach nochmal click listener an stage children? Besser: openTheme erweitert dataset.
-      // Daher: wir erweitern openTheme() unten so, dass dataset === 'private_linda' => openPrivateTheme()
+      controlsPanel.querySelector("#btnAddRat").addEventListener("click", () => {
+        if(privateLindaState.budget.rat_added) return;
+        privateLindaState.budget.rat_added = true;
+        savePrivateLinda();
+        render();
+      });
+
+      controlsPanel.querySelector("#btnCarryover").addEventListener("click", () => {
+        const current = Number(privateLindaState.budget.carryover || 0);
+        const val = prompt("Aus dem Vormonat übrig (€):", String(current));
+        if(val === null) return;
+        const num = Number(String(val).replace(",", "."));
+        if(!isFinite(num)){
+          alert("Bitte eine Zahl eingeben.");
+          return;
+        }
+        privateLindaState.budget.carryover = num;
+        savePrivateLinda();
+        render();
+      });
+
+      controlsPanel.querySelector("#btnResetPrivateAll").addEventListener("click", () => {
+        const ok = confirm("Privat wirklich resetten?\n\n→ Zur Verfügung ohne Rat = 673 €\n→ Rat entfernt\n→ Vormonat = 0\n→ Alle Bubbles gelöscht");
+        if(!ok) return;
+        privateLindaState = structuredClone(SEED_PRIVATE_LINDA);
+        savePrivateLinda();
+        closePrivateTheme();
+        render();
+      });
+
+      // Bubbles
+      const themes = privateLindaState.themes || [];
+      const totalsMap = new Map();
+      for(const t of themes) totalsMap.set(t.id, privateThemeTotal(t));
+
+      renderBubblesView({
+        dataset: "private",
+        themes,
+        totalsOverrideMap: totalsMap,
+        headerLeftLabel: "Privat-Budget (Monat)",
+        headerLeftValue: `${euro(privateAvailableTotal())} • Übrig: ${euro(privateRemaining())}`,
+        extraControls: (container) => {
+          const hint = document.createElement("div");
+          hint.className = "tiny";
+          hint.textContent = "Klick auf Bubble → Details. Dort kannst du private Posten hinzufügen/bearbeiten.";
+          container.appendChild(hint);
+        },
+        mountEl: (() => {
+          const mount = document.createElement("section");
+          mount.className = "panel";
+          mount.style.padding = "0";
+          mount.style.background = "transparent";
+          mount.style.border = "0";
+          mount.style.boxShadow = "none";
+          app.appendChild(mount);
+          return mount;
+        })(),
+        storageLabel: "Privat"
+      });
     }
 
-    /** Modal open/close (shared) **/
-    function openTheme(dataset, themeId){
-      if(dataset === "private_linda"){
-        openPrivateTheme(themeId);
+    /**********************
+     * Main render
+     **********************/
+    function render(){
+      renderTopRight();
+
+      if(route === "gesamt"){
+        pageTitle.textContent = "FIXKOSTEN ÜBERSICHT";
+        pageSubtitle.textContent = "Gesamtansicht. Klick auf Bubble → Details. Summe oben aktualisiert sich automatisch.";
+        renderBubblesView({
+          dataset: "main",
+          themes: mainState.themes,
+          headerLeftLabel: "Gesamt (Monat)",
+          headerLeftValue: euro(totalOfThemes(mainState.themes)),
+          extraControls: (container) => {
+            const row = document.createElement("div");
+            row.className = "row";
+            row.innerHTML = `
+              <button class="primary" id="btnAddTheme">+ Thema</button>
+              <button class="danger" id="btnResetMain">Reset Fixkosten</button>
+            `;
+            container.appendChild(row);
+
+            row.querySelector("#btnAddTheme").addEventListener("click", () => {
+              const name = prompt("Name für neues Thema:", "Neues Thema");
+              if(name === null) return;
+              const t = mkTheme(name.trim() || "Neues Thema", randomNiceColor(), []);
+              mainState.themes.push(t);
+              saveMain();
+              render();
+              openTheme("main", t.id);
+            });
+
+            row.querySelector("#btnResetMain").addEventListener("click", () => {
+              const ok = confirm("Fixkosten auf Seed zurücksetzen?");
+              if(!ok) return;
+              mainState = structuredClone(SEED_MAIN);
+              saveMain();
+              render();
+            });
+          }
+        });
         return;
       }
 
+      if(route === "pro_person"){
+        pageTitle.textContent = "PRO PERSON";
+        pageSubtitle.textContent = "Wähle Moritz oder Linda. „Geteilt (individuell)“ lässt unterschiedliche Anteile pro Posten zu.";
+        renderProPersonSingleView();
+        return;
+      }
+
+      if(route === "lebenserhaltung"){
+        pageTitle.textContent = "LEBENSERHALTUNG";
+        pageSubtitle.textContent = "Eigenes Bubble-Diagramm pro Monat. Oben rechts: Rest (Start 650 € minus Diagramm-Summe).";
+        ensureLivingMonth(livingMonth);
+        saveLiving();
+        renderLivingView();
+        return;
+      }
+
+      if(route === "privat_linda"){
+        pageTitle.textContent = "PRIVAT (LINDA)";
+        pageSubtitle.textContent = "Eigenes Budget + private Bubbles. Kein Einfluss auf Fixkosten/Lebenserhaltung.";
+        renderPrivateLindaView();
+        return;
+      }
+    }
+
+    /**********************
+     * Shared Modal (main/living) logic
+     **********************/
+    const backdrop = document.getElementById("backdrop");
+    const btnClose = document.getElementById("btnClose");
+    const btnDeleteTheme = document.getElementById("btnDeleteTheme");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalSub = document.getElementById("modalSub");
+
+    const themeName = document.getElementById("themeName");
+    const themeColor = document.getElementById("themeColor");
+    const btnSaveTheme = document.getElementById("btnSaveTheme");
+
+    const itemName = document.getElementById("itemName");
+    const itemAmount = document.getElementById("itemAmount");
+    const itemPayer = document.getElementById("itemPayer");
+    const itemMoritz = document.getElementById("itemMoritz");
+    const itemLinda = document.getElementById("itemLinda");
+    const btnAddItem = document.getElementById("btnAddItem");
+
+    const itemsTbody = document.getElementById("itemsTbody");
+    const themeTotalPill = document.getElementById("themeTotalPill");
+    const themeItemsPill = document.getElementById("themeItemsPill");
+    const addItemHint = document.getElementById("addItemHint");
+
+    function openTheme(dataset, themeId){
       modalContext = { dataset, themeId };
       const theme = getThemeByContext();
       if(!theme) return;
@@ -1506,77 +1728,106 @@
       });
     }
 
-    /** PRIVATE modal logic **/
+    /**********************
+     * Private Modal logic
+     **********************/
+    const p_backdrop = document.getElementById("p_backdrop");
+    const p_btnClose = document.getElementById("p_btnClose");
+    const p_btnDeleteTheme = document.getElementById("p_btnDeleteTheme");
+    const p_modalTitle = document.getElementById("p_modalTitle");
+    const p_modalSub = document.getElementById("p_modalSub");
+
+    const p_themeName = document.getElementById("p_themeName");
+    const p_themeColor = document.getElementById("p_themeColor");
+    const p_btnSaveTheme = document.getElementById("p_btnSaveTheme");
+
+    const p_itemName = document.getElementById("p_itemName");
+    const p_itemAmount = document.getElementById("p_itemAmount");
+    const p_btnAddItem = document.getElementById("p_btnAddItem");
+
+    const p_itemsTbody = document.getElementById("p_itemsTbody");
+    const p_themeTotalPill = document.getElementById("p_themeTotalPill");
+    const p_themeItemsPill = document.getElementById("p_themeItemsPill");
+
     function getPrivateTheme(){
-      if(!privateModalThemeId) return null;
-      return (privateLindaState.themes || []).find(t => t.id === privateModalThemeId) || null;
+      const id = privateModalContext.themeId;
+      if(!id) return null;
+      return (privateLindaState.themes || []).find(t => t.id === id) || null;
     }
 
     function openPrivateTheme(themeId){
-      privateModalThemeId = themeId;
-      const t = getPrivateTheme();
-      if(!t) return;
+      privateModalContext = { themeId };
+      const theme = getPrivateTheme();
+      if(!theme) return;
 
-      modalTitlePrivate.textContent = t.name;
-      modalSubPrivate.textContent = `Privat • ID: ${t.id}`;
+      p_modalTitle.textContent = theme.name;
+      p_modalSub.textContent = `Privat (Linda) • ID: ${theme.id}`;
 
-      themeNamePrivate.value = t.name;
-      themeColorPrivate.value = t.color;
+      p_themeName.value = theme.name;
+      p_themeColor.value = theme.color;
 
-      itemNamePrivate.value = "";
-      itemAmountPrivate.value = "";
-
-      btnDeleteThemePrivate.textContent = "Bubble löschen";
+      p_itemName.value = "";
+      p_itemAmount.value = "";
 
       renderPrivateThemeItems();
-      backdropPrivate.style.display = "flex";
+      p_backdrop.style.display = "flex";
     }
 
     function closePrivateTheme(){
-      privateModalThemeId = null;
-      backdropPrivate.style.display = "none";
+      privateModalContext = { themeId: null };
+      p_backdrop.style.display = "none";
     }
 
-    btnClosePrivate.addEventListener("click", closePrivateTheme);
-    backdropPrivate.addEventListener("click", (e) => { if(e.target === backdropPrivate) closePrivateTheme(); });
-    window.addEventListener("keydown", (e) => {
-      if(e.key === "Escape" && backdropPrivate.style.display === "flex") closePrivateTheme();
-    });
+    function deletePrivateTheme(){
+      const theme = getPrivateTheme();
+      if(!theme) return;
 
-    btnDeleteThemePrivate.addEventListener("click", () => {
-      const t = getPrivateTheme();
-      if(!t) return;
-      const ok = confirm(`Private Bubble wirklich löschen?\n\n${t.name}`);
-      if(!ok) return;
-      privateLindaState.themes = (privateLindaState.themes || []).filter(x => x.id !== t.id);
+      privateLindaState.themes = (privateLindaState.themes || []).filter(t => t.id !== theme.id);
       savePrivateLinda();
+
       closePrivateTheme();
       render();
+    }
+
+    p_btnClose.addEventListener("click", closePrivateTheme);
+    p_backdrop.addEventListener("click", (e) => { if(e.target === p_backdrop) closePrivateTheme(); });
+    window.addEventListener("keydown", (e) => {
+      if(e.key === "Escape" && p_backdrop.style.display === "flex") closePrivateTheme();
     });
 
-    btnSaveThemePrivate.addEventListener("click", () => {
-      const t = getPrivateTheme();
-      if(!t) return;
-      t.name = themeNamePrivate.value.trim() || "Unbenannt";
-      t.color = themeColorPrivate.value || t.color;
+    p_btnDeleteTheme.addEventListener("click", () => {
+      const theme = getPrivateTheme();
+      if(!theme) return;
+      const ok = confirm(`Bubble wirklich löschen?\n\n${theme.name}`);
+      if(!ok) return;
+      deletePrivateTheme();
+    });
+
+    p_btnSaveTheme.addEventListener("click", () => {
+      const theme = getPrivateTheme();
+      if(!theme) return;
+
+      theme.name = p_themeName.value.trim() || "Unbenannt";
+      theme.color = p_themeColor.value || theme.color;
+
       savePrivateLinda();
-      modalTitlePrivate.textContent = t.name;
+      p_modalTitle.textContent = theme.name;
       renderPrivateThemeItems();
       render();
     });
 
-    btnAddItemPrivate.addEventListener("click", () => {
-      const t = getPrivateTheme();
-      if(!t) return;
+    p_btnAddItem.addEventListener("click", () => {
+      const theme = getPrivateTheme();
+      if(!theme) return;
 
-      const name = itemNamePrivate.value.trim() || "Neuer Posten";
-      const amount = Number(itemAmountPrivate.value || 0);
+      const name = p_itemName.value.trim() || "Neuer Posten";
+      const amount = Number(p_itemAmount.value || 0);
 
-      t.items = t.items || [];
-      t.items.push({ id: uid(), name, amount });
+      theme.items = theme.items || [];
+      theme.items.push({ id: uid(), name, amount });
 
-      itemNamePrivate.value = "";
-      itemAmountPrivate.value = "";
+      p_itemName.value = "";
+      p_itemAmount.value = "";
 
       savePrivateLinda();
       renderPrivateThemeItems();
@@ -1584,71 +1835,68 @@
     });
 
     function renderPrivateThemeItems(){
-      const t = getPrivateTheme();
-      if(!t) return;
+      const theme = getPrivateTheme();
+      if(!theme) return;
 
-      const total = privateThemeTotal(t);
-      themeTotalPillPrivate.textContent = `Summe: ${euro(total)}`;
-      themeItemsPillPrivate.textContent = `Posten: ${(t.items||[]).length}`;
+      const total = privateThemeTotal(theme);
+      p_themeTotalPill.textContent = `Summe: ${euro(total)}`;
+      p_themeItemsPill.textContent = `Posten: ${(theme.items || []).length}`;
 
-      itemsTbodyPrivate.innerHTML = "";
-      if(!t.items || t.items.length === 0){
-        itemsTbodyPrivate.innerHTML = `<tr><td colspan="3" class="muted">Noch keine Posten.</td></tr>`;
+      p_itemsTbody.innerHTML = "";
+      if(!theme.items || theme.items.length === 0){
+        p_itemsTbody.innerHTML = `<tr><td colspan="3" class="muted">Noch keine Posten.</td></tr>`;
         return;
       }
 
-      for(const it of t.items){
+      for(const it of theme.items){
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>
-            <input data-role="pname" data-id="${escapeHTML(it.id)}" type="text" value="${escapeHTML(it.name)}"
+            <input data-role="p_name" data-id="${escapeHTML(it.id)}" type="text" value="${escapeHTML(it.name)}"
               style="width:100%; border:1px solid var(--border); border-radius:10px; padding:8px 10px;">
           </td>
           <td class="right">
-            <input data-role="pamount" data-id="${escapeHTML(it.id)}" type="number" step="0.01" value="${Number(it.amount||0)}"
+            <input data-role="p_amount" data-id="${escapeHTML(it.id)}" type="number" step="0.01" value="${Number(it.amount || 0)}"
               style="width:140px; text-align:right; border:1px solid var(--border); border-radius:10px; padding:8px 10px;">
           </td>
           <td class="right">
-            <button class="danger" data-role="pdelete" data-id="${escapeHTML(it.id)}">Löschen</button>
+            <button class="danger" data-role="p_delete" data-id="${escapeHTML(it.id)}">Löschen</button>
           </td>
         `;
-        itemsTbodyPrivate.appendChild(tr);
+        p_itemsTbody.appendChild(tr);
       }
 
-      itemsTbodyPrivate.querySelectorAll('input[data-role="pname"]').forEach(inp => {
+      p_itemsTbody.querySelectorAll('input[data-role="p_name"]').forEach(inp => {
         inp.addEventListener("change", () => {
-          const t = getPrivateTheme(); if(!t) return;
-          const item = (t.items||[]).find(x => x.id === inp.dataset.id); if(!item) return;
+          const theme = getPrivateTheme(); if(!theme) return;
+          const item = (theme.items || []).find(x => x.id === inp.dataset.id); if(!item) return;
           item.name = inp.value.trim() || "Posten";
-          savePrivateLinda();
-          renderPrivateThemeItems();
-          render();
+          savePrivateLinda(); renderPrivateThemeItems(); render();
         });
       });
 
-      itemsTbodyPrivate.querySelectorAll('input[data-role="pamount"]').forEach(inp => {
+      p_itemsTbody.querySelectorAll('input[data-role="p_amount"]').forEach(inp => {
         inp.addEventListener("change", () => {
-          const t = getPrivateTheme(); if(!t) return;
-          const item = (t.items||[]).find(x => x.id === inp.dataset.id); if(!item) return;
+          const theme = getPrivateTheme(); if(!theme) return;
+          const item = (theme.items || []).find(x => x.id === inp.dataset.id); if(!item) return;
           item.amount = Number(inp.value || 0);
-          savePrivateLinda();
-          renderPrivateThemeItems();
-          render();
+          savePrivateLinda(); renderPrivateThemeItems(); render();
         });
       });
 
-      itemsTbodyPrivate.querySelectorAll('button[data-role="pdelete"]').forEach(btn => {
+      p_itemsTbody.querySelectorAll('button[data-role="p_delete"]').forEach(btn => {
         btn.addEventListener("click", () => {
-          const t = getPrivateTheme(); if(!t) return;
-          t.items = (t.items||[]).filter(x => x.id !== btn.dataset.id);
-          savePrivateLinda();
-          renderPrivateThemeItems();
-          render();
+          const theme = getPrivateTheme(); if(!theme) return;
+          theme.items = (theme.items || []).filter(x => x.id !== btn.dataset.id);
+          savePrivateLinda(); renderPrivateThemeItems(); render();
         });
       });
     }
 
-    /** init **/
+    /**********************
+     * init
+     **********************/
+    ensureLivingMonth(livingMonth);
     saveMain();
     saveLiving();
     savePrivateLinda();
