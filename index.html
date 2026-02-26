@@ -748,33 +748,34 @@ function loadPrivateLinda(){
 
     /** Top right pill **/
     function renderTopRight(){
-      if(route === "lebenserhaltung"){
-        ensureLivingMonth(livingMonth);
-        const themes = livingState.months[livingMonth].themes;
-        const spent = totalOfThemes(themes);
-        topRightPill.textContent = `Rest: ${euro(LIVING_START - spent)}`;
-        return;
-      }
+  if(route === "privat_linda"){
+    topRightPill.textContent = "Privat ✍️";
+    return;
+  }
 
-      if(route === "pro_person"){
-        const total = totalForPerson(mainState.themes, activePerson);
-        const name = activePerson === "moritz" ? "Moritz" : "Linda";
-        topRightPill.textContent = `${name}: ${euro(total)}`;
-        return;
-      }
+  if(route === "lebenserhaltung"){
+    ensureLivingMonth(livingMonth);
+    const themes = livingState.months[livingMonth].themes;
+    const spent = totalOfThemes(themes);
+    topRightPill.textContent = `Rest: ${euro(LIVING_START - spent)}`;
+    return;
+  }
 
-      const total = totalOfThemes(mainState.themes);
-      topRightPill.textContent = `Gesamt: ${euro(total)}`;
-    }
+  if(route === "pro_person"){
+    const total = totalForPerson(mainState.themes, activePerson);
+    const name = activePerson === "moritz" ? "Moritz" : "Linda";
+    topRightPill.textContent = `${name}: ${euro(total)}`;
+    return;
+  }
+
+  const total = totalOfThemes(mainState.themes);
+  topRightPill.textContent = `Gesamt: ${euro(total)}`;
+}
 
     /** Render **/
     function render(){
       renderTopRight();
       
-if(route === "privat_linda"){
-  topRightPill.textContent = "Privat ✍️";
-  return;
-}
       if(route === "gesamt"){
         pageTitle.textContent = "FIXKOSTEN ÜBERSICHT";
         pageSubtitle.textContent = "Gesamtansicht. Klick auf Bubble → Details. Summe oben aktualisiert sich automatisch.";
@@ -1114,9 +1115,8 @@ function renderProPersonSingleView(){
           stage.appendChild(bubble);
         }
       };
-      doStageRender();
 
-function renderPrivateLindaView(){
+      function renderPrivateLindaView(){
   app.innerHTML = "";
 
   const info = document.createElement("section");
@@ -1218,7 +1218,8 @@ function renderPrivateLindaView(){
 
   draw();
 }
-      
+
+      doStageRender();     
       // Notes
       const notesPanel = document.createElement("section");
       notesPanel.className = "panel";
