@@ -142,6 +142,20 @@
       outline:none;
       background:#fff;
     }
+    textarea{
+      width:100%;
+      min-height:160px;
+      resize:vertical;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      outline:none;
+      background:#fff;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
     input[type="color"]{
       width: 60px;
       height: 40px;
@@ -245,10 +259,6 @@
       color:#333;
       font-size:12px;
     }
-    .warn{
-      color:#b00020;
-      font-weight:800;
-    }
   </style>
 </head>
 <body>
@@ -265,7 +275,6 @@
         <button class="tab" data-route="lebenserhaltung">Lebenserhaltung</button>
         <button class="tab" data-route="privat_linda">Privat (Linda)</button>
       </div>
-
       <div class="pill" id="topRightPill">–</div>
     </div>
   </header>
@@ -380,135 +389,17 @@
 
   <script>
     /**********************
-     * Pro Person:
-     * - Person Toggle (nur eine sichtbar)
-     * - Shared items: custom split (Moritz/Linda €)
+     * Fixes in dieser Version:
+     * 1) uid() ist VOR Private-Seed definiert (sonst ReferenceError)
+     * 2) renderPrivateLindaView() ist Top-Level (nicht in renderLivingView)
+     * 3) renderBubblesView benutzt korrekt root.appendChild(...) (damit mountEl funktioniert)
      **********************/
 
-    const LS_MAIN = "finance_bubbles_v2";     // neue Version wegen Datenstruktur
+    const LS_MAIN = "finance_bubbles_v2";
     const LS_LIVING = "finance_living_v1";
     const LIVING_START = 650;
 
-
-const LS_PRIVATE_LINDA = "finance_private_linda_v1";
-
-const SEED_PRIVATE_LINDA = {
-  blocks: [
-    { id: uid(), title: "Meine Übersicht", content: "Alles hier ist privat & frei editierbar.\n\n• Notizen\n• Ideen\n• Erinnerungen" }
-  ]
-};
-
-let privateLindaState = loadPrivateLinda() ?? structuredClone(SEED_PRIVATE_LINDA);
-
-function savePrivateLinda(){
-  localStorage.setItem(LS_PRIVATE_LINDA, JSON.stringify(privateLindaState));
-}
-function loadPrivateLinda(){
-  try{
-    const raw = localStorage.getItem(LS_PRIVATE_LINDA);
-    if(!raw) return null;
-    const parsed = JSON.parse(raw);
-    if(!parsed || typeof parsed !== "object") return null;
-    parsed.blocks = Array.isArray(parsed.blocks) ? parsed.blocks.map(b => ({
-      id: String(b.id || uid()),
-      title: String(b.title || "Ohne Titel"),
-      content: String(b.content || "")
-    })) : [];
-    return parsed;
-  }catch{ return null; }
-}
-
-    
-    const PEOPLE = [
-      { id:"moritz", name:"Moritz" },
-      { id:"linda", name:"Linda" }
-    ];
-
-    // payer:
-    // - "moritz" | "linda" -> zahlt komplett
-    // - "split_custom" -> moritz_share + linda_share
-    const SEED_MAIN = {
-      themes: [
-        mkTheme("Wohnung (warm)", "#f2b277", [{ name:"Wohnung (warm)", amount:1090, payer:"split_custom", moritz_share:545, linda_share:545 }]),
-        mkTheme("Rücklage Nachzahlung", "#7ac28b", [{ name:"Rücklage Nachzahlung", amount:75, payer:"split_custom", moritz_share:37.5, linda_share:37.5 }]),
-        mkTheme("Lebenserhaltungskosten (essen, etc.)", "#c95a7a", [{ name:"Lebenserhaltungskosten", amount:650, payer:"split_custom", moritz_share:325, linda_share:325 }]),
-        mkTheme("Auto Versicherung", "#a98bc9", [{ name:"Auto Versicherung", amount:92.02, payer:"split_custom", moritz_share:46.01, linda_share:46.01 }]),
-        mkTheme("Strom (inkl. Nachtspeicher)", "#f0d44a", [{ name:"Strom", amount:310, payer:"split_custom", moritz_share:155, linda_share:155 }]),
-        mkTheme("Internet (Vertrag + Router)", "#6aa7d9", [{ name:"Internet", amount:57, payer:"split_custom", moritz_share:28.5, linda_share:28.5 }]),
-        mkTheme("Handy (2 Verträge)", "#f29aa2", [{ name:"Handy", amount:90, payer:"split_custom", moritz_share:45, linda_share:45 }]),
-        mkTheme("Abonnements (Fitness, Programme, Mitgliedschaften)", "#f08f57", [
-
-  { name:"Microsoft", amount:7.00, payer:"linda" },
-  { name:"Microsoft", amount:2.78, payer:"moritz" },
-
-  { name:"Adobe", amount:66.00, payer:"split_custom", moritz_share:33.00, linda_share:33.00 },
-
-  { name:"Amazon Prime", amount:8.99, payer:"linda" },
-
-  { name:"Verdi", amount:27.50, payer:"linda" },
-  { name:"Verdi", amount:27.50, payer:"moritz" },
-
-  { name:"SPD Land", amount:7.50, payer:"linda" },
-  { name:"SPD Land", amount:7.50, payer:"moritz" },
-
-  { name:"Selection", amount:31.80, payer:"linda" },
-  { name:"Selection", amount:31.80, payer:"moritz" },
-
-  { name:"awo", amount:2.50, payer:"linda" },
-  { name:"awo", amount:2.50, payer:"moritz" },
-
-  { name:"Spotify", amount:8.78, payer:"split_custom", moritz_share:4.39, linda_share:4.39 }
-
-]),
-        mkTheme("Versicherungen (Hafti, Recht, Hausrat)", "#89c2c7", [{ name:"Versicherungen", amount:45, payer:"split_custom", moritz_share:15, linda_share:30 }]),
-      ]
-    };
-
-    let route = "gesamt";
-    let activePerson = "moritz"; // pro_person toggle
-
-    // Main state (Fixkosten)
-    let mainState = loadMain() ?? structuredClone(SEED_MAIN);
-
-    // Living state
-    let livingState = loadLiving() ?? makeDefaultLivingState();
-    let livingMonth = livingState.currentMonth;
-
-    // Modal context
-    let modalContext = { dataset: "main", themeId: null };
-
-    /** DOM **/
-    const app = document.getElementById("app");
-    const pageTitle = document.getElementById("pageTitle");
-    const pageSubtitle = document.getElementById("pageSubtitle");
-    const topRightPill = document.getElementById("topRightPill");
-
-    document.querySelectorAll(".tab").forEach(btn => {
-      btn.addEventListener("click", () => setRoute(btn.dataset.route));
-    });
-
-    // Modal DOM
-    const backdrop = document.getElementById("backdrop");
-    const btnClose = document.getElementById("btnClose");
-    const btnDeleteTheme = document.getElementById("btnDeleteTheme");
-    const modalTitle = document.getElementById("modalTitle");
-    const modalSub = document.getElementById("modalSub");
-
-    const themeName = document.getElementById("themeName");
-    const themeColor = document.getElementById("themeColor");
-    const btnSaveTheme = document.getElementById("btnSaveTheme");
-
-    const itemName = document.getElementById("itemName");
-    const itemAmount = document.getElementById("itemAmount");
-    const itemPayer = document.getElementById("itemPayer");
-    const itemMoritz = document.getElementById("itemMoritz");
-    const itemLinda = document.getElementById("itemLinda");
-    const btnAddItem = document.getElementById("btnAddItem");
-
-    const itemsTbody = document.getElementById("itemsTbody");
-    const themeTotalPill = document.getElementById("themeTotalPill");
-    const themeItemsPill = document.getElementById("themeItemsPill");
-    const addItemHint = document.getElementById("addItemHint");
+    const LS_PRIVATE_LINDA = "finance_private_linda_v1";
 
     /** Utils **/
     function uid(){
@@ -534,6 +425,40 @@ function loadPrivateLinda(){
       return "split_custom";
     }
 
+    /** Private Linda **/
+    const SEED_PRIVATE_LINDA = {
+      blocks: [
+        { id: uid(), title: "Meine Übersicht", content: "Alles hier ist privat & frei editierbar.\n\n• Notizen\n• Ideen\n• Erinnerungen" }
+      ]
+    };
+
+    function savePrivateLinda(){
+      localStorage.setItem(LS_PRIVATE_LINDA, JSON.stringify(privateLindaState));
+    }
+    function loadPrivateLinda(){
+      try{
+        const raw = localStorage.getItem(LS_PRIVATE_LINDA);
+        if(!raw) return null;
+        const parsed = JSON.parse(raw);
+        if(!parsed || typeof parsed !== "object") return null;
+        parsed.blocks = Array.isArray(parsed.blocks) ? parsed.blocks.map(b => ({
+          id: String(b.id || uid()),
+          title: String(b.title || "Ohne Titel"),
+          content: String(b.content || "")
+        })) : [];
+        return parsed;
+      }catch{ return null; }
+    }
+
+    let privateLindaState = loadPrivateLinda() ?? structuredClone(SEED_PRIVATE_LINDA);
+
+    /** People **/
+    const PEOPLE = [
+      { id:"moritz", name:"Moritz" },
+      { id:"linda", name:"Linda" }
+    ];
+
+    /** Themes **/
     function mkTheme(name, color, items = []){
       return {
         id: uid(),
@@ -557,9 +482,6 @@ function loadPrivateLinda(){
       let m = Number(it.moritz_share ?? 0);
       let l = Number(it.linda_share ?? 0);
 
-      // Migration/Defaults:
-      // - wenn payer moritz/linda -> shares = 0
-      // - wenn split_custom aber keine shares -> 50/50
       if(payer === "moritz" || payer === "linda"){
         m = 0; l = 0;
       } else {
@@ -599,7 +521,6 @@ function loadPrivateLinda(){
       }
       return 0;
     }
-
     function themeTotalForPerson(theme, personId){
       let sum = 0;
       for(const it of (theme.items || [])){
@@ -611,20 +532,43 @@ function loadPrivateLinda(){
       return (themes || []).reduce((s,t) => s + themeTotalForPerson(t, personId), 0);
     }
 
-    function yyyymmNow(){
-      const d = new Date();
-      const m = String(d.getMonth()+1).padStart(2,"0");
-      return `${d.getFullYear()}-${m}`;
-    }
     function randomNiceColor(){
       const palette = ["#f2b277","#c95a7a","#a98bc9","#7ac28b","#6aa7d9","#f0d44a","#f29aa2","#89c2c7","#f08f57"];
       return palette[Math.floor(Math.random() * palette.length)];
     }
 
+    /** Seeds **/
+    const SEED_MAIN = {
+      themes: [
+        mkTheme("Wohnung (warm)", "#f2b277", [{ name:"Wohnung (warm)", amount:1090, payer:"split_custom", moritz_share:545, linda_share:545 }]),
+        mkTheme("Rücklage Nachzahlung", "#7ac28b", [{ name:"Rücklage Nachzahlung", amount:75, payer:"split_custom", moritz_share:37.5, linda_share:37.5 }]),
+        mkTheme("Lebenserhaltungskosten (essen, etc.)", "#c95a7a", [{ name:"Lebenserhaltungskosten", amount:650, payer:"split_custom", moritz_share:325, linda_share:325 }]),
+        mkTheme("Auto Versicherung", "#a98bc9", [{ name:"Auto Versicherung", amount:92.02, payer:"split_custom", moritz_share:46.01, linda_share:46.01 }]),
+        mkTheme("Strom (inkl. Nachtspeicher)", "#f0d44a", [{ name:"Strom", amount:310, payer:"split_custom", moritz_share:155, linda_share:155 }]),
+        mkTheme("Internet (Vertrag + Router)", "#6aa7d9", [{ name:"Internet", amount:57, payer:"split_custom", moritz_share:28.5, linda_share:28.5 }]),
+        mkTheme("Handy (2 Verträge)", "#f29aa2", [{ name:"Handy", amount:90, payer:"split_custom", moritz_share:45, linda_share:45 }]),
+        mkTheme("Abonnements (Fitness, Programme, Mitgliedschaften)", "#f08f57", [
+          { name:"Microsoft", amount:7.00, payer:"linda" },
+          { name:"Microsoft", amount:2.78, payer:"moritz" },
+          { name:"Adobe", amount:66.00, payer:"split_custom", moritz_share:33.00, linda_share:33.00 },
+          { name:"Amazon Prime", amount:8.99, payer:"linda" },
+          { name:"Verdi", amount:27.50, payer:"linda" },
+          { name:"Verdi", amount:27.50, payer:"moritz" },
+          { name:"SPD Land", amount:7.50, payer:"linda" },
+          { name:"SPD Land", amount:7.50, payer:"moritz" },
+          { name:"Selection", amount:31.80, payer:"linda" },
+          { name:"Selection", amount:31.80, payer:"moritz" },
+          { name:"awo", amount:2.50, payer:"linda" },
+          { name:"awo", amount:2.50, payer:"moritz" },
+          { name:"Spotify", amount:8.78, payer:"split_custom", moritz_share:4.39, linda_share:4.39 }
+        ]),
+        mkTheme("Versicherungen (Hafti, Recht, Hausrat)", "#89c2c7", [{ name:"Versicherungen", amount:45, payer:"split_custom", moritz_share:15, linda_share:30 }]),
+      ]
+    };
+
     /** Storage **/
     function saveMain(){ localStorage.setItem(LS_MAIN, JSON.stringify(mainState)); }
     function loadMain(){
-      // Migration: falls alte v1 vorhanden -> übernehmen und zu v2 upgraden
       const tryKeys = ["finance_bubbles_v2", "finance_bubbles_v1"];
       for(const key of tryKeys){
         try{
@@ -644,7 +588,6 @@ function loadPrivateLinda(){
         name: String(t.name || "Unbenannt"),
         color: String(t.color || "#cccccc"),
         items: Array.isArray(t.items) ? t.items.map(it => {
-          // v1 hatte payer: moritz/linda/split -> map split -> split_custom 50/50
           let payer = it.payer;
           if(String(payer) === "split") payer = "split_custom";
           return normalizeItem({
@@ -657,6 +600,12 @@ function loadPrivateLinda(){
           });
         }) : []
       }));
+    }
+
+    function yyyymmNow(){
+      const d = new Date();
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      return `${d.getFullYear()}-${m}`;
     }
 
     function saveLiving(){ localStorage.setItem(LS_LIVING, JSON.stringify(livingState)); }
@@ -677,7 +626,6 @@ function loadPrivateLinda(){
       }catch{ return null; }
     }
 
-    /** Living default **/
     function makeDefaultLivingState(){
       const month = yyyymmNow();
       return { currentMonth: month, months: { [month]: { themes: [] } }, notes: { [month]: [] } };
@@ -738,6 +686,49 @@ function loadPrivateLinda(){
       return placed;
     }
 
+    /** State **/
+    let route = "gesamt";
+    let activePerson = "moritz";
+
+    let mainState = loadMain() ?? structuredClone(SEED_MAIN);
+    let livingState = loadLiving() ?? makeDefaultLivingState();
+    let livingMonth = livingState.currentMonth;
+
+    let modalContext = { dataset: "main", themeId: null };
+
+    /** DOM **/
+    const app = document.getElementById("app");
+    const pageTitle = document.getElementById("pageTitle");
+    const pageSubtitle = document.getElementById("pageSubtitle");
+    const topRightPill = document.getElementById("topRightPill");
+
+    document.querySelectorAll(".tab").forEach(btn => {
+      btn.addEventListener("click", () => setRoute(btn.dataset.route));
+    });
+
+    // Modal DOM
+    const backdrop = document.getElementById("backdrop");
+    const btnClose = document.getElementById("btnClose");
+    const btnDeleteTheme = document.getElementById("btnDeleteTheme");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalSub = document.getElementById("modalSub");
+
+    const themeName = document.getElementById("themeName");
+    const themeColor = document.getElementById("themeColor");
+    const btnSaveTheme = document.getElementById("btnSaveTheme");
+
+    const itemName = document.getElementById("itemName");
+    const itemAmount = document.getElementById("itemAmount");
+    const itemPayer = document.getElementById("itemPayer");
+    const itemMoritz = document.getElementById("itemMoritz");
+    const itemLinda = document.getElementById("itemLinda");
+    const btnAddItem = document.getElementById("btnAddItem");
+
+    const itemsTbody = document.getElementById("itemsTbody");
+    const themeTotalPill = document.getElementById("themeTotalPill");
+    const themeItemsPill = document.getElementById("themeItemsPill");
+    const addItemHint = document.getElementById("addItemHint");
+
     /** Router **/
     function setRoute(next){
       route = next;
@@ -748,34 +739,41 @@ function loadPrivateLinda(){
 
     /** Top right pill **/
     function renderTopRight(){
-  if(route === "privat_linda"){
-    topRightPill.textContent = "Privat ✍️";
-    return;
-  }
+      if(route === "privat_linda"){
+        topRightPill.textContent = "Privat ✍️";
+        return;
+      }
 
-  if(route === "lebenserhaltung"){
-    ensureLivingMonth(livingMonth);
-    const themes = livingState.months[livingMonth].themes;
-    const spent = totalOfThemes(themes);
-    topRightPill.textContent = `Rest: ${euro(LIVING_START - spent)}`;
-    return;
-  }
+      if(route === "lebenserhaltung"){
+        ensureLivingMonth(livingMonth);
+        const themes = livingState.months[livingMonth].themes;
+        const spent = totalOfThemes(themes);
+        topRightPill.textContent = `Rest: ${euro(LIVING_START - spent)}`;
+        return;
+      }
 
-  if(route === "pro_person"){
-    const total = totalForPerson(mainState.themes, activePerson);
-    const name = activePerson === "moritz" ? "Moritz" : "Linda";
-    topRightPill.textContent = `${name}: ${euro(total)}`;
-    return;
-  }
+      if(route === "pro_person"){
+        const total = totalForPerson(mainState.themes, activePerson);
+        const name = activePerson === "moritz" ? "Moritz" : "Linda";
+        topRightPill.textContent = `${name}: ${euro(total)}`;
+        return;
+      }
 
-  const total = totalOfThemes(mainState.themes);
-  topRightPill.textContent = `Gesamt: ${euro(total)}`;
-}
+      const total = totalOfThemes(mainState.themes);
+      topRightPill.textContent = `Gesamt: ${euro(total)}`;
+    }
 
     /** Render **/
     function render(){
       renderTopRight();
-      
+
+      if(route === "privat_linda"){
+        pageTitle.textContent = "PRIVAT (LINDA)";
+        pageSubtitle.textContent = "Nur für deine persönliche Übersicht. Komplett getrennt – keine Auswirkung auf Fixkosten oder Lebenserhaltung.";
+        renderPrivateLindaView();
+        return;
+      }
+
       if(route === "gesamt"){
         pageTitle.textContent = "FIXKOSTEN ÜBERSICHT";
         pageSubtitle.textContent = "Gesamtansicht. Klick auf Bubble → Details. Summe oben aktualisiert sich automatisch.";
@@ -830,19 +828,12 @@ function loadPrivateLinda(){
         renderLivingView();
         return;
       }
-
-      if(route === "privat_linda"){
-  pageTitle.textContent = "PRIVAT (LINDA)";
-  pageSubtitle.textContent = "Nur für deine persönliche Übersicht. Komplett getrennt – keine Auswirkung auf Fixkosten oder Lebenserhaltung.";
-  renderPrivateLindaView();
-  return;
-}
     }
 
     /** Shared bubbles view **/
     function renderBubblesView({ dataset, themes, headerLeftLabel, headerLeftValue, totalsOverrideMap=null, extraControls=null, mountEl=null }){
-  const root = mountEl || app;
-  root.innerHTML = "";
+      const root = mountEl || app;
+      root.innerHTML = "";
 
       const statsPanel = document.createElement("section");
       statsPanel.className = "panel stats";
@@ -861,12 +852,12 @@ function loadPrivateLinda(){
           <div class="tiny">Fixkosten: <code>${LS_MAIN}</code></div>
         </div>
       `;
-      app.appendChild(statsPanel);
+      root.appendChild(statsPanel);
 
       const controlsPanel = document.createElement("section");
       controlsPanel.className = "panel";
       if(extraControls) extraControls(controlsPanel);
-      app.appendChild(controlsPanel);
+      root.appendChild(controlsPanel);
 
       const stagePanel = document.createElement("section");
       stagePanel.className = "panel";
@@ -874,7 +865,7 @@ function loadPrivateLinda(){
         <div class="stage" id="stage"></div>
         <p class="tiny" style="margin:10px 2px 0;">Tip: Bei Overlap Browser kurz resize → neu layouten.</p>
       `;
-      app.appendChild(stagePanel);
+      root.appendChild(stagePanel);
 
       const stage = stagePanel.querySelector("#stage");
 
@@ -920,72 +911,69 @@ function loadPrivateLinda(){
       }, { passive:true });
     }
 
-    /** Pro person: single selected person **/
-function renderProPersonSingleView(){
-  app.innerHTML = "";
-  const themes = mainState.themes;
+    /** Pro person **/
+    function renderProPersonSingleView(){
+      app.innerHTML = "";
+      const themes = mainState.themes;
 
-  const moritzTotal = totalForPerson(themes, "moritz");
-  const lindaTotal = totalForPerson(themes, "linda");
-  const combined = totalOfThemes(themes);
-  const selectedTotal = totalForPerson(themes, activePerson);
+      const moritzTotal = totalForPerson(themes, "moritz");
+      const lindaTotal = totalForPerson(themes, "linda");
+      const combined = totalOfThemes(themes);
+      const selectedTotal = totalForPerson(themes, activePerson);
 
-  // Toggle Panel bleibt oben
-  const controls = document.createElement("section");
-  controls.className = "panel";
-  controls.innerHTML = `
-    <div class="row" style="align-items:center;">
-      <div class="seg" aria-label="Person auswählen">
-        <button id="segMoritz" class="${activePerson==="moritz" ? "active":""}">Moritz</button>
-        <button id="segLinda" class="${activePerson==="linda" ? "active":""}">Linda</button>
-      </div>
-      <div class="pill">Ausgewählt: ${activePerson==="moritz" ? "Moritz" : "Linda"} • ${escapeHTML(euro(selectedTotal))}</div>
-      <div class="tiny">Kontrolle: Moritz ${escapeHTML(euro(moritzTotal))} • Linda ${escapeHTML(euro(lindaTotal))} • Gesamt ${escapeHTML(euro(combined))}</div>
-    </div>
-  `;
-  app.appendChild(controls);
+      const controls = document.createElement("section");
+      controls.className = "panel";
+      controls.innerHTML = `
+        <div class="row" style="align-items:center;">
+          <div class="seg" aria-label="Person auswählen">
+            <button id="segMoritz" class="${activePerson==="moritz" ? "active":""}">Moritz</button>
+            <button id="segLinda" class="${activePerson==="linda" ? "active":""}">Linda</button>
+          </div>
+          <div class="pill">Ausgewählt: ${activePerson==="moritz" ? "Moritz" : "Linda"} • ${escapeHTML(euro(selectedTotal))}</div>
+          <div class="tiny">Kontrolle: Moritz ${escapeHTML(euro(moritzTotal))} • Linda ${escapeHTML(euro(lindaTotal))} • Gesamt ${escapeHTML(euro(combined))}</div>
+        </div>
+      `;
+      app.appendChild(controls);
 
-  controls.querySelector("#segMoritz").addEventListener("click", () => {
-    activePerson = "moritz";
-    render();
-  });
-  controls.querySelector("#segLinda").addEventListener("click", () => {
-    activePerson = "linda";
-    render();
-  });
+      controls.querySelector("#segMoritz").addEventListener("click", () => {
+        activePerson = "moritz";
+        render();
+      });
+      controls.querySelector("#segLinda").addEventListener("click", () => {
+        activePerson = "linda";
+        render();
+      });
 
-  // HIER: ein eigener Mount-Container für die Bubbles, damit der Toggle nicht gelöscht wird
-  const bubblesMount = document.createElement("section");
-  bubblesMount.className = "panel";
-  bubblesMount.style.padding = "0";
-  bubblesMount.style.background = "transparent";
-  bubblesMount.style.border = "0";
-  bubblesMount.style.boxShadow = "none";
-  app.appendChild(bubblesMount);
+      const bubblesMount = document.createElement("section");
+      bubblesMount.className = "panel";
+      bubblesMount.style.padding = "0";
+      bubblesMount.style.background = "transparent";
+      bubblesMount.style.border = "0";
+      bubblesMount.style.boxShadow = "none";
+      app.appendChild(bubblesMount);
 
-  const map = new Map();
-  for(const t of themes){
-    map.set(t.id, themeTotalForPerson(t, activePerson));
-  }
+      const map = new Map();
+      for(const t of themes){
+        map.set(t.id, themeTotalForPerson(t, activePerson));
+      }
 
-  renderBubblesView({
-    dataset: "main",
-    themes,
-    totalsOverrideMap: map,
-    headerLeftLabel: `${activePerson==="moritz" ? "Moritz" : "Linda"} (Monat)`,
-    headerLeftValue: euro(selectedTotal),
-    extraControls: (container) => {
-      const hint = document.createElement("div");
-      hint.className = "tiny";
-      hint.textContent = "Klick auf Bubble öffnet globale Details. Dort stellst du pro Posten die Anteile ein.";
-      container.appendChild(hint);
-    },
-    mountEl: bubblesMount
-  });
-}
+      renderBubblesView({
+        dataset: "main",
+        themes,
+        totalsOverrideMap: map,
+        headerLeftLabel: `${activePerson==="moritz" ? "Moritz" : "Linda"} (Monat)`,
+        headerLeftValue: euro(selectedTotal),
+        extraControls: (container) => {
+          const hint = document.createElement("div");
+          hint.className = "tiny";
+          hint.textContent = "Klick auf Bubble öffnet globale Details. Dort stellst du pro Posten die Anteile ein.";
+          container.appendChild(hint);
+        },
+        mountEl: bubblesMount
+      });
+    }
 
-
-    /** Living view (unverändert) **/
+    /** Living view **/
     function renderLivingView(){
       app.innerHTML = "";
 
@@ -1115,111 +1103,8 @@ function renderProPersonSingleView(){
           stage.appendChild(bubble);
         }
       };
+      doStageRender();
 
-      function renderPrivateLindaView(){
-  app.innerHTML = "";
-
-  const info = document.createElement("section");
-  info.className = "panel";
-  info.innerHTML = `
-    <div class="tiny">
-      Diese Seite ist <b>nur für dich</b> und wird lokal im Browser gespeichert (<code>${LS_PRIVATE_LINDA}</code>).
-      Kein Einfluss auf andere Bereiche.
-    </div>
-    <div class="row" style="margin-top:10px;">
-      <button class="primary" id="btnAddPrivateBlock">+ Bereich</button>
-      <button class="danger" id="btnResetPrivate">Reset Privat</button>
-    </div>
-  `;
-  app.appendChild(info);
-
-  const list = document.createElement("section");
-  list.className = "panel";
-  app.appendChild(list);
-
-  function draw(){
-    list.innerHTML = "";
-
-    const blocks = privateLindaState.blocks || [];
-    if(blocks.length === 0){
-      list.innerHTML = `<div class="muted" style="font-size:13px;">Noch keine Einträge.</div>`;
-      return;
-    }
-
-    for(const b of blocks){
-      const card = document.createElement("div");
-      card.className = "panel";
-      card.style.background = "#fff";
-      card.style.marginBottom = "12px";
-
-      card.innerHTML = `
-        <div class="row" style="align-items:flex-end;">
-          <div>
-            <label>Titel</label>
-            <input data-role="ptitle" data-id="${escapeHTML(b.id)}" type="text" value="${escapeHTML(b.title)}" />
-          </div>
-          <div class="shrink">
-            <button class="danger" data-role="pdel" data-id="${escapeHTML(b.id)}">Löschen</button>
-          </div>
-        </div>
-
-        <div style="margin-top:10px;">
-          <label>Inhalt</label>
-          <textarea data-role="pcontent" data-id="${escapeHTML(b.id)}"
-            style="width:100%; min-height:160px; resize:vertical; padding:10px 12px; border-radius:12px; border:1px solid var(--border); outline:none;">${escapeHTML(b.content)}</textarea>
-          <div class="tiny" style="margin-top:6px;">Tipp: Du kannst hier alles reinschreiben – frei formatiert als Text.</div>
-        </div>
-      `;
-      list.appendChild(card);
-    }
-
-    // bindings
-    list.querySelectorAll('input[data-role="ptitle"]').forEach(inp => {
-      inp.addEventListener("input", () => {
-        const blk = privateLindaState.blocks.find(x => x.id === inp.dataset.id);
-        if(!blk) return;
-        blk.title = inp.value;
-        savePrivateLinda();
-      });
-    });
-
-    list.querySelectorAll('textarea[data-role="pcontent"]').forEach(ta => {
-      ta.addEventListener("input", () => {
-        const blk = privateLindaState.blocks.find(x => x.id === ta.dataset.id);
-        if(!blk) return;
-        blk.content = ta.value;
-        savePrivateLinda();
-      });
-    });
-
-    list.querySelectorAll('button[data-role="pdel"]').forEach(btn => {
-      btn.addEventListener("click", () => {
-        privateLindaState.blocks = privateLindaState.blocks.filter(x => x.id !== btn.dataset.id);
-        savePrivateLinda();
-        draw();
-      });
-    });
-  }
-
-  info.querySelector("#btnAddPrivateBlock").addEventListener("click", () => {
-    privateLindaState.blocks = privateLindaState.blocks || [];
-    privateLindaState.blocks.unshift({ id: uid(), title: "Neuer Bereich", content: "" });
-    savePrivateLinda();
-    draw();
-  });
-
-  info.querySelector("#btnResetPrivate").addEventListener("click", () => {
-    const ok = confirm("Privat-Bereich wirklich zurücksetzen?");
-    if(!ok) return;
-    privateLindaState = structuredClone(SEED_PRIVATE_LINDA);
-    savePrivateLinda();
-    draw();
-  });
-
-  draw();
-}
-
-      doStageRender();     
       // Notes
       const notesPanel = document.createElement("section");
       notesPanel.className = "panel";
@@ -1298,6 +1183,108 @@ function renderProPersonSingleView(){
         clearTimeout(timer);
         timer = setTimeout(doStageRender, 80);
       }, { passive:true });
+    }
+
+    /** PRIVATE LINDA VIEW (Top-Level!) **/
+    function renderPrivateLindaView(){
+      app.innerHTML = "";
+
+      const info = document.createElement("section");
+      info.className = "panel";
+      info.innerHTML = `
+        <div class="tiny">
+          Diese Seite ist <b>nur für dich</b> und wird lokal im Browser gespeichert (<code>${LS_PRIVATE_LINDA}</code>).
+          Kein Einfluss auf andere Bereiche.
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="primary" id="btnAddPrivateBlock">+ Bereich</button>
+          <button class="danger" id="btnResetPrivate">Reset Privat</button>
+        </div>
+      `;
+      app.appendChild(info);
+
+      const list = document.createElement("section");
+      list.className = "panel";
+      app.appendChild(list);
+
+      function draw(){
+        list.innerHTML = "";
+
+        const blocks = privateLindaState.blocks || [];
+        if(blocks.length === 0){
+          list.innerHTML = `<div class="muted" style="font-size:13px;">Noch keine Einträge.</div>`;
+          return;
+        }
+
+        for(const b of blocks){
+          const card = document.createElement("div");
+          card.className = "panel";
+          card.style.background = "#fff";
+          card.style.marginBottom = "12px";
+
+          card.innerHTML = `
+            <div class="row" style="align-items:flex-end;">
+              <div>
+                <label>Titel</label>
+                <input data-role="ptitle" data-id="${escapeHTML(b.id)}" type="text" value="${escapeHTML(b.title)}" />
+              </div>
+              <div class="shrink">
+                <button class="danger" data-role="pdel" data-id="${escapeHTML(b.id)}">Löschen</button>
+              </div>
+            </div>
+
+            <div style="margin-top:10px;">
+              <label>Inhalt</label>
+              <textarea data-role="pcontent" data-id="${escapeHTML(b.id)}">${escapeHTML(b.content)}</textarea>
+              <div class="tiny" style="margin-top:6px;">Tipp: Du kannst hier alles reinschreiben – frei formatiert als Text.</div>
+            </div>
+          `;
+          list.appendChild(card);
+        }
+
+        list.querySelectorAll('input[data-role="ptitle"]').forEach(inp => {
+          inp.addEventListener("input", () => {
+            const blk = (privateLindaState.blocks || []).find(x => x.id === inp.dataset.id);
+            if(!blk) return;
+            blk.title = inp.value;
+            savePrivateLinda();
+          });
+        });
+
+        list.querySelectorAll('textarea[data-role="pcontent"]').forEach(ta => {
+          ta.addEventListener("input", () => {
+            const blk = (privateLindaState.blocks || []).find(x => x.id === ta.dataset.id);
+            if(!blk) return;
+            blk.content = ta.value;
+            savePrivateLinda();
+          });
+        });
+
+        list.querySelectorAll('button[data-role="pdel"]').forEach(btn => {
+          btn.addEventListener("click", () => {
+            privateLindaState.blocks = (privateLindaState.blocks || []).filter(x => x.id !== btn.dataset.id);
+            savePrivateLinda();
+            draw();
+          });
+        });
+      }
+
+      info.querySelector("#btnAddPrivateBlock").addEventListener("click", () => {
+        privateLindaState.blocks = privateLindaState.blocks || [];
+        privateLindaState.blocks.unshift({ id: uid(), title: "Neuer Bereich", content: "" });
+        savePrivateLinda();
+        draw();
+      });
+
+      info.querySelector("#btnResetPrivate").addEventListener("click", () => {
+        const ok = confirm("Privat-Bereich wirklich zurücksetzen?");
+        if(!ok) return;
+        privateLindaState = structuredClone(SEED_PRIVATE_LINDA);
+        savePrivateLinda();
+        draw();
+      });
+
+      draw();
     }
 
     /** Modal open/close **/
@@ -1418,7 +1405,6 @@ function renderProPersonSingleView(){
         it.moritz_share = m;
         it.linda_share = l;
 
-        // Soft warning (nicht blockierend)
         const diff = Math.abs((m + l) - amount);
         if(diff > 0.01){
           alert("Hinweis: Moritz+Linda ist nicht gleich dem Betrag. Das ist erlaubt, aber dann stimmt die Personensumme nicht 1:1 zum Gesamtbetrag.");
@@ -1444,13 +1430,6 @@ function renderProPersonSingleView(){
       else saveMain();
     }
 
-    function payerLabel(p){
-      p = normalizePayer(p);
-      if(p === "moritz") return "Moritz";
-      if(p === "linda") return "Linda";
-      return "Geteilt (ind.)";
-    }
-
     function renderThemeItems(){
       const theme = getThemeByContext();
       if(!theme) return;
@@ -1467,7 +1446,6 @@ function renderProPersonSingleView(){
 
       for(const itRaw of theme.items){
         const it = normalizeItem(itRaw);
-        // keep normalized in state
         Object.assign(itRaw, it);
 
         const p = normalizePayer(it.payer);
@@ -1509,7 +1487,6 @@ function renderProPersonSingleView(){
         itemsTbody.appendChild(tr);
       }
 
-      // Bind handlers
       itemsTbody.querySelectorAll('input[data-role="name"]').forEach(inp => {
         inp.addEventListener("change", () => {
           const theme = getThemeByContext(); if(!theme) return;
@@ -1524,11 +1501,7 @@ function renderProPersonSingleView(){
           const theme = getThemeByContext(); if(!theme) return;
           const item = theme.items.find(x => x.id === inp.dataset.id); if(!item) return;
           item.amount = Number(inp.value || 0);
-
-          // Wenn split_custom und shares leer/0: keep them, aber bei amount change nicht automatisch überschreiben.
-          // Optional: könnte man hier diff anzeigen. Für jetzt: nur normalisieren.
           Object.assign(item, normalizeItem(item));
-
           persist(); renderThemeItems(); render();
         });
       });
@@ -1537,14 +1510,8 @@ function renderProPersonSingleView(){
         sel.addEventListener("change", () => {
           const theme = getThemeByContext(); if(!theme) return;
           const item = theme.items.find(x => x.id === sel.dataset.id); if(!item) return;
-
           item.payer = normalizePayer(sel.value);
-
-          // Wechsel-Logik:
-          // - zu moritz/linda: shares = 0
-          // - zu split_custom: wenn shares 0 -> 50/50
           Object.assign(item, normalizeItem(item));
-
           persist(); renderThemeItems(); render();
         });
       });
@@ -1554,7 +1521,6 @@ function renderProPersonSingleView(){
           const theme = getThemeByContext(); if(!theme) return;
           const item = theme.items.find(x => x.id === inp.dataset.id); if(!item) return;
           if(normalizePayer(item.payer) !== "split_custom") return;
-
           item.moritz_share = Number(inp.value || 0);
           persist(); renderThemeItems(); render();
         });
@@ -1565,7 +1531,6 @@ function renderProPersonSingleView(){
           const theme = getThemeByContext(); if(!theme) return;
           const item = theme.items.find(x => x.id === inp.dataset.id); if(!item) return;
           if(normalizePayer(item.payer) !== "split_custom") return;
-
           item.linda_share = Number(inp.value || 0);
           persist(); renderThemeItems(); render();
         });
