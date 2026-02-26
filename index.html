@@ -263,6 +263,7 @@
         <button class="tab active" data-route="gesamt">Gesamt</button>
         <button class="tab" data-route="pro_person">Pro Person</button>
         <button class="tab" data-route="lebenserhaltung">Lebenserhaltung</button>
+        <button class="tab" data-route="privat_linda">Privat (Linda)</button>
       </div>
 
       <div class="pill" id="topRightPill">–</div>
@@ -388,6 +389,36 @@
     const LS_LIVING = "finance_living_v1";
     const LIVING_START = 650;
 
+
+const LS_PRIVATE_LINDA = "finance_private_linda_v1";
+
+const SEED_PRIVATE_LINDA = {
+  blocks: [
+    { id: uid(), title: "Meine Übersicht", content: "Alles hier ist privat & frei editierbar.\n\n• Notizen\n• Ideen\n• Erinnerungen" }
+  ]
+};
+
+let privateLindaState = loadPrivateLinda() ?? structuredClone(SEED_PRIVATE_LINDA);
+
+function savePrivateLinda(){
+  localStorage.setItem(LS_PRIVATE_LINDA, JSON.stringify(privateLindaState));
+}
+function loadPrivateLinda(){
+  try{
+    const raw = localStorage.getItem(LS_PRIVATE_LINDA);
+    if(!raw) return null;
+    const parsed = JSON.parse(raw);
+    if(!parsed || typeof parsed !== "object") return null;
+    parsed.blocks = Array.isArray(parsed.blocks) ? parsed.blocks.map(b => ({
+      id: String(b.id || uid()),
+      title: String(b.title || "Ohne Titel"),
+      content: String(b.content || "")
+    })) : [];
+    return parsed;
+  }catch{ return null; }
+}
+
+    
     const PEOPLE = [
       { id:"moritz", name:"Moritz" },
       { id:"linda", name:"Linda" }
@@ -429,7 +460,7 @@
   { name:"Spotify", amount:8.78, payer:"split_custom", moritz_share:4.39, linda_share:4.39 }
 
 ]),
-        mkTheme("Versicherungen (Hafti, Recht)", "#89c2c7", [{ name:"Versicherungen", amount:45, payer:"split_custom", moritz_share:15, linda_share:30 }]),
+        mkTheme("Versicherungen (Hafti, Recht, Hausrat)", "#89c2c7", [{ name:"Versicherungen", amount:45, payer:"split_custom", moritz_share:15, linda_share:30 }]),
       ]
     };
 
@@ -739,7 +770,11 @@
     /** Render **/
     function render(){
       renderTopRight();
-
+      
+if(route === "privat_linda"){
+  topRightPill.textContent = "Privat ✍️";
+  return;
+}
       if(route === "gesamt"){
         pageTitle.textContent = "FIXKOSTEN ÜBERSICHT";
         pageSubtitle.textContent = "Gesamtansicht. Klick auf Bubble → Details. Summe oben aktualisiert sich automatisch.";
@@ -794,6 +829,13 @@
         renderLivingView();
         return;
       }
+
+      if(route === "privat_linda"){
+  pageTitle.textContent = "PRIVAT (LINDA)";
+  pageSubtitle.textContent = "Nur für deine persönliche Übersicht. Komplett getrennt – keine Auswirkung auf Fixkosten oder Lebenserhaltung.";
+  renderPrivateLindaView();
+  return;
+}
     }
 
     /** Shared bubbles view **/
@@ -1074,6 +1116,109 @@ function renderProPersonSingleView(){
       };
       doStageRender();
 
+function renderPrivateLindaView(){
+  app.innerHTML = "";
+
+  const info = document.createElement("section");
+  info.className = "panel";
+  info.innerHTML = `
+    <div class="tiny">
+      Diese Seite ist <b>nur für dich</b> und wird lokal im Browser gespeichert (<code>${LS_PRIVATE_LINDA}</code>).
+      Kein Einfluss auf andere Bereiche.
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <button class="primary" id="btnAddPrivateBlock">+ Bereich</button>
+      <button class="danger" id="btnResetPrivate">Reset Privat</button>
+    </div>
+  `;
+  app.appendChild(info);
+
+  const list = document.createElement("section");
+  list.className = "panel";
+  app.appendChild(list);
+
+  function draw(){
+    list.innerHTML = "";
+
+    const blocks = privateLindaState.blocks || [];
+    if(blocks.length === 0){
+      list.innerHTML = `<div class="muted" style="font-size:13px;">Noch keine Einträge.</div>`;
+      return;
+    }
+
+    for(const b of blocks){
+      const card = document.createElement("div");
+      card.className = "panel";
+      card.style.background = "#fff";
+      card.style.marginBottom = "12px";
+
+      card.innerHTML = `
+        <div class="row" style="align-items:flex-end;">
+          <div>
+            <label>Titel</label>
+            <input data-role="ptitle" data-id="${escapeHTML(b.id)}" type="text" value="${escapeHTML(b.title)}" />
+          </div>
+          <div class="shrink">
+            <button class="danger" data-role="pdel" data-id="${escapeHTML(b.id)}">Löschen</button>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <label>Inhalt</label>
+          <textarea data-role="pcontent" data-id="${escapeHTML(b.id)}"
+            style="width:100%; min-height:160px; resize:vertical; padding:10px 12px; border-radius:12px; border:1px solid var(--border); outline:none;">${escapeHTML(b.content)}</textarea>
+          <div class="tiny" style="margin-top:6px;">Tipp: Du kannst hier alles reinschreiben – frei formatiert als Text.</div>
+        </div>
+      `;
+      list.appendChild(card);
+    }
+
+    // bindings
+    list.querySelectorAll('input[data-role="ptitle"]').forEach(inp => {
+      inp.addEventListener("input", () => {
+        const blk = privateLindaState.blocks.find(x => x.id === inp.dataset.id);
+        if(!blk) return;
+        blk.title = inp.value;
+        savePrivateLinda();
+      });
+    });
+
+    list.querySelectorAll('textarea[data-role="pcontent"]').forEach(ta => {
+      ta.addEventListener("input", () => {
+        const blk = privateLindaState.blocks.find(x => x.id === ta.dataset.id);
+        if(!blk) return;
+        blk.content = ta.value;
+        savePrivateLinda();
+      });
+    });
+
+    list.querySelectorAll('button[data-role="pdel"]').forEach(btn => {
+      btn.addEventListener("click", () => {
+        privateLindaState.blocks = privateLindaState.blocks.filter(x => x.id !== btn.dataset.id);
+        savePrivateLinda();
+        draw();
+      });
+    });
+  }
+
+  info.querySelector("#btnAddPrivateBlock").addEventListener("click", () => {
+    privateLindaState.blocks = privateLindaState.blocks || [];
+    privateLindaState.blocks.unshift({ id: uid(), title: "Neuer Bereich", content: "" });
+    savePrivateLinda();
+    draw();
+  });
+
+  info.querySelector("#btnResetPrivate").addEventListener("click", () => {
+    const ok = confirm("Privat-Bereich wirklich zurücksetzen?");
+    if(!ok) return;
+    privateLindaState = structuredClone(SEED_PRIVATE_LINDA);
+    savePrivateLinda();
+    draw();
+  });
+
+  draw();
+}
+      
       // Notes
       const notesPanel = document.createElement("section");
       notesPanel.className = "panel";
@@ -1436,6 +1581,7 @@ function renderProPersonSingleView(){
 
     /** init **/
     saveMain();
+    savePrivateLinda();
     saveLiving();
     updateAddItemHint();
     render();
